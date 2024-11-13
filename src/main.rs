@@ -2,6 +2,7 @@
 #![no_std]
 
 mod subsystems;
+mod hardware;
 mod control;
 
 use vexide::prelude::*;
