@@ -16,20 +16,4 @@ impl<const COUNT: usize> Intake<COUNT> {
 
         Ok(())
     }
-
-    pub fn intake(&mut self) -> Result<(), MotorError> {
-        for motor in self.motors.iter_mut() {
-            motor.set_voltage(motor.max_voltage())?;
-        }
-        
-        Ok(())
-    }
-
-    pub fn outtake(&mut self) -> Result<(), MotorError> {
-        for motor in self.motors.iter_mut() {
-            motor.set_voltage(-motor.max_voltage())?;
-        }
-        
-        Ok(())
-    }
 }

@@ -1,3 +1,5 @@
+//! AUBIE Solenoid SwitchBoard
+
 use vexide::devices::{
     adi::digital::LogicLevel,
     smart::{
