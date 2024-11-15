@@ -4,12 +4,14 @@
 mod control;
 mod hardware;
 mod subsystems;
+mod theme;
 
 use control::pid::Pid;
 use subsystems::{
     lady_brown::{LadyBrownState, LadyBrownTarget},
     Drivetrain, Intake, LadyBrown,
 };
+use theme::THEME_WAR_EAGLE;
 use vexide::prelude::*;
 
 pub struct Robot {
@@ -29,7 +31,7 @@ impl Compete for Robot {
         if let Ok(angle) = self.lady_brown.rotation_sensor.angle() {
             _ = self.lady_brown.rotation_sensor.set_position(angle);
         }
-        
+
         loop {
             let state = self.controller.state().unwrap_or_default();
 
@@ -78,7 +80,7 @@ impl Compete for Robot {
     }
 }
 
-#[vexide::main]
+#[vexide::main(banner(theme = THEME_WAR_EAGLE))]
 async fn main(peripherals: Peripherals) {
     let robot = Robot {
         controller: peripherals.primary_controller,

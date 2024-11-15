@@ -1,11 +1,15 @@
 extern crate alloc;
 
-use vexide::{core::println, devices::{
-    position::Position,
-    smart::{
-        motor::{Motor, MotorError}, RotationSensor, SmartDevice
+use vexide::{
+    devices::{
+        position::Position,
+        smart::{
+            motor::{Motor, MotorError},
+            RotationSensor, SmartDevice,
+        },
     },
-}, prelude::{Float, MotorControl}};
+    prelude::MotorControl,
+};
 
 use crate::control::Feedback;
 
@@ -28,7 +32,7 @@ impl<const COUNT: usize, F: Feedback<Error = f64, Output = f64>> LadyBrown<COUNT
         let motor_target = match target {
             LadyBrownTarget::State(state) => {
                 let angle = self.rotation_sensor.position()?.as_degrees();
-                
+
                 let error = state.target_position().as_degrees() - angle;
 
                 MotorControl::Voltage(self.feedback.update(error, Motor::UPDATE_INTERVAL))
