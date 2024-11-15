@@ -1,12 +1,11 @@
 #![no_main]
 #![no_std]
 
-mod control;
 mod hardware;
 mod subsystems;
 mod theme;
 
-use control::pid::Pid;
+use evian::control::pid::Pid;
 use subsystems::{
     lady_brown::{LadyBrownState, LadyBrownTarget},
     Drivetrain, Intake, LadyBrown,

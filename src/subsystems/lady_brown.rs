@@ -1,5 +1,6 @@
 extern crate alloc;
 
+use evian::control::Feedback;
 use vexide::{
     devices::{
         position::Position,
@@ -10,8 +11,6 @@ use vexide::{
     },
     prelude::MotorControl,
 };
-
-use crate::control::Feedback;
 
 pub struct LadyBrown<const COUNT: usize, F: Feedback<Error = f64, Output = f64>> {
     pub motors: [Motor; COUNT],
