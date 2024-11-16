@@ -8,6 +8,7 @@ use vexide::devices::{
     },
 };
 
+/// Carson's Box of Fun
 #[derive(Debug, PartialEq)]
 pub struct SwitchBoard {
     serial: SerialPort,

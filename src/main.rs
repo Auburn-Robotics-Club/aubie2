@@ -1,11 +1,9 @@
 #![no_main]
 #![no_std]
 
-mod hardware;
-mod subsystems;
-mod theme;
-
-use core::time::Duration;
+pub mod hardware;
+pub mod subsystems;
+pub mod theme;
 
 use evian::control::pid::Pid;
 use subsystems::{

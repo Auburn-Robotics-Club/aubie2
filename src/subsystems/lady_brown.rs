@@ -1,14 +1,10 @@
-extern crate alloc;
-
 use evian::control::Feedback;
-use vexide::{
-    core::println, devices::{
-        position::Position,
-        smart::{
-            motor::{Motor, MotorError},
-            RotationSensor, SmartDevice,
-        },
-    }, prelude::MotorControl
+use vexide::devices::{
+    position::Position,
+    smart::{
+        motor::{Motor, MotorControl, MotorError},
+        RotationSensor, SmartDevice,
+    },
 };
 
 pub struct LadyBrown<const COUNT: usize, F: Feedback<Error = f64, Output = f64>> {

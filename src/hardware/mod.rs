@@ -1,1 +1,1 @@
-mod switch_board;
+pub mod switch_board;
