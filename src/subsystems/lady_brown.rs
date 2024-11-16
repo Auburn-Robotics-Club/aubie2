@@ -24,14 +24,14 @@ impl<const COUNT: usize, F: Feedback<Error = f64, Output = f64>> LadyBrown<COUNT
 
     pub fn update(&mut self, target: LadyBrownTarget) -> Result<(), MotorError> {
         let motor_target = match target {
-            LadyBrownTarget::State(state) => {
+            LadyBrownTarget::Position(state) => {
                 let angle = self.rotation_sensor.position()?.as_degrees();
 
                 let error = state.target_position().as_degrees() - angle;
 
                 MotorControl::Voltage(self.feedback.update(error, Motor::UPDATE_INTERVAL))
             }
-            LadyBrownTarget::Motor(v) => v,
+            LadyBrownTarget::Manual(v) => v,
         };
 
         for motor in self.motors.iter_mut() {
@@ -44,24 +44,24 @@ impl<const COUNT: usize, F: Feedback<Error = f64, Output = f64>> LadyBrown<COUNT
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum LadyBrownTarget {
-    State(LadyBrownState),
-    Motor(MotorControl),
+    Position(LadyBrownPosition),
+    Manual(MotorControl),
 }
 
 impl Default for LadyBrownTarget {
     fn default() -> Self {
-        Self::State(LadyBrownState::Lowered)
+        Self::Position(LadyBrownPosition::Lowered)
     }
 }
 
 #[derive(Default, Debug, Clone, Copy, Eq, PartialEq)]
-pub enum LadyBrownState {
+pub enum LadyBrownPosition {
     #[default]
     Lowered,
     Raised,
 }
 
-impl LadyBrownState {
+impl LadyBrownPosition {
     pub fn target_position(&self) -> Position {
         match self {
             Self::Raised => Position::from_degrees(232.0),

@@ -7,8 +7,8 @@ pub mod theme;
 
 use evian::control::pid::Pid;
 use subsystems::{
-    lady_brown::{LadyBrownState, LadyBrownTarget},
-    Drivetrain, Intake, LadyBrown,
+    lady_brown::{LadyBrown, LadyBrownPosition, LadyBrownTarget},
+    Drivetrain, Intake,
 };
 use theme::THEME_WAR_EAGLE;
 use vexide::prelude::*;
@@ -37,11 +37,11 @@ impl Compete for Robot {
 
             if state.button_b.is_now_pressed() {
                 self.lady_brown_state = match self.lady_brown_state {
-                    LadyBrownTarget::State(state) => match state {
-                        LadyBrownState::Lowered => LadyBrownTarget::State(LadyBrownState::Raised),
-                        LadyBrownState::Raised => LadyBrownTarget::State(LadyBrownState::Lowered),
+                    LadyBrownTarget::Position(state) => match state {
+                        LadyBrownPosition::Lowered => LadyBrownTarget::Position(LadyBrownPosition::Raised),
+                        LadyBrownPosition::Raised => LadyBrownTarget::Position(LadyBrownPosition::Lowered),
                     },
-                    LadyBrownTarget::Motor(_) => LadyBrownTarget::State(LadyBrownState::Raised),
+                    LadyBrownTarget::Manual(_) => LadyBrownTarget::Position(LadyBrownPosition::Raised),
                 };
             }
 
@@ -55,13 +55,13 @@ impl Compete for Robot {
 
             if state.button_l1.is_pressed() {
                 self.lady_brown_state =
-                    LadyBrownTarget::Motor(MotorControl::Voltage(Motor::V5_MAX_VOLTAGE));
+                    LadyBrownTarget::Manual(MotorControl::Voltage(Motor::V5_MAX_VOLTAGE));
             } else if state.button_l2.is_pressed() {
                 self.lady_brown_state =
-                    LadyBrownTarget::Motor(MotorControl::Voltage(-Motor::V5_MAX_VOLTAGE));
-            } else if let LadyBrownTarget::Motor(_) = self.lady_brown_state {
+                    LadyBrownTarget::Manual(MotorControl::Voltage(-Motor::V5_MAX_VOLTAGE));
+            } else if let LadyBrownTarget::Manual(_) = self.lady_brown_state {
                 self.lady_brown_state =
-                    LadyBrownTarget::Motor(MotorControl::Brake(BrakeMode::Hold));
+                    LadyBrownTarget::Manual(MotorControl::Brake(BrakeMode::Hold));
             }
 
             _ = self.lady_brown.update(self.lady_brown_state);
