@@ -12,7 +12,7 @@ An [API reference](https://docs.rs/vexide) is also provided by docs.rs.
 
 ### Compiling and uploading to a VEX V5 robot
 
-Use the cargo-pros terminal utility to build and upload this vexide project.
+Use the cargo-v5 terminal utility to build and upload this vexide project.
 
 ```console
 cargo v5 build
@@ -26,7 +26,7 @@ cargo v5 upload
 
 ### Viewing program output
 
-You can view panic messages and calls to `println!()` using the PROS terminal.
+You can view panic messages and calls to `println!()` using the terminal.
 Use a USB cable to connect to your robot brain or controller, then start the terminal:
 
 ```console
