@@ -5,6 +5,8 @@ mod hardware;
 mod subsystems;
 mod theme;
 
+use core::time::Duration;
+
 use evian::control::pid::Pid;
 use subsystems::{
     lady_brown::{LadyBrownState, LadyBrownTarget},
@@ -27,10 +29,6 @@ pub struct Robot {
 
 impl Compete for Robot {
     async fn driver(&mut self) {
-        if let Ok(angle) = self.lady_brown.rotation_sensor.angle() {
-            _ = self.lady_brown.rotation_sensor.set_position(angle);
-        }
-
         loop {
             let state = self.controller.state().unwrap_or_default();
 

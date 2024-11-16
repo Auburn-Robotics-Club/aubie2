@@ -2,14 +2,13 @@ extern crate alloc;
 
 use evian::control::Feedback;
 use vexide::{
-    devices::{
+    core::println, devices::{
         position::Position,
         smart::{
             motor::{Motor, MotorError},
             RotationSensor, SmartDevice,
         },
-    },
-    prelude::MotorControl,
+    }, prelude::MotorControl
 };
 
 pub struct LadyBrown<const COUNT: usize, F: Feedback<Error = f64, Output = f64>> {
@@ -69,8 +68,8 @@ pub enum LadyBrownState {
 impl LadyBrownState {
     pub fn target_position(&self) -> Position {
         match self {
-            Self::Raised => Position::from_degrees(240.0),
-            Self::Lowered => Position::from_degrees(210.0),
+            Self::Raised => Position::from_degrees(232.0),
+            Self::Lowered => Position::from_degrees(203.0),
         }
     }
 }
