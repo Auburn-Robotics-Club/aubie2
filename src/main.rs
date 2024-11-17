@@ -7,13 +7,14 @@ pub mod hardware;
 pub mod subsystems;
 pub mod theme;
 
-use evian::{differential::Voltages, prelude::*};
+use evian::prelude::*;
+use vexide::prelude::*;
+
 use subsystems::{
     lady_brown::{LadyBrown, LadyBrownPosition, LadyBrownTarget},
     Intake,
 };
 use theme::THEME_WAR_EAGLE;
-use vexide::prelude::*;
 
 pub struct Robot {
     controller: Controller,
@@ -91,36 +92,38 @@ impl Compete for Robot {
 
 #[vexide::main(banner(theme = THEME_WAR_EAGLE))]
 async fn main(peripherals: Peripherals) {
-    // Left/right motors shared between drivetrain and odometry.
-    let left_motors = shared_motors![
-        Motor::new(peripherals.port_7, Gearset::Blue, Direction::Reverse),
-        Motor::new(peripherals.port_8, Gearset::Blue, Direction::Reverse),
-        Motor::new(peripherals.port_9, Gearset::Blue, Direction::Forward),
-        Motor::new(peripherals.port_10, Gearset::Blue, Direction::Reverse),
-    ];
-    let right_motors = shared_motors![
-        Motor::new(peripherals.port_1, Gearset::Blue, Direction::Forward),
-        Motor::new(peripherals.port_2, Gearset::Blue, Direction::Forward),
-        Motor::new(peripherals.port_3, Gearset::Blue, Direction::Forward),
-        Motor::new(peripherals.port_4, Gearset::Blue, Direction::Reverse),
-    ];
-
     let robot = Robot {
         // Controller
         controller: peripherals.primary_controller,
 
-        // Differential Drivetrain
-        drivetrain: DifferentialDrivetrain::new(
-            left_motors.clone(),
-            right_motors.clone(),
-            ParallelWheelTracking::new(
+        // Drivetrain Model & Localization
+        drivetrain: {
+            // Left/right motors shared between drivetrain and odometry.
+            let left_motors = shared_motors![
+                Motor::new(peripherals.port_7, Gearset::Blue, Direction::Reverse),
+                Motor::new(peripherals.port_8, Gearset::Blue, Direction::Reverse),
+                Motor::new(peripherals.port_9, Gearset::Blue, Direction::Forward),
+                Motor::new(peripherals.port_10, Gearset::Blue, Direction::Reverse),
+            ];
+            let right_motors = shared_motors![
+                Motor::new(peripherals.port_1, Gearset::Blue, Direction::Forward),
+                Motor::new(peripherals.port_2, Gearset::Blue, Direction::Forward),
+                Motor::new(peripherals.port_3, Gearset::Blue, Direction::Forward),
+                Motor::new(peripherals.port_4, Gearset::Blue, Direction::Reverse),
+            ];
+
+            // Localization (odometry)
+            let localization = ParallelWheelTracking::new(
                 Vec2::new(0.0, 0.0),
                 f64::to_radians(90.0),
                 TrackingWheel::new(left_motors.clone(), 3.25, 7.5, Some(36.0 / 48.0)),
                 TrackingWheel::new(right_motors.clone(), 3.25, 7.5, Some(36.0 / 48.0)),
                 None,
-            ),
-        ),
+            );
+
+            // Drivetrain Model
+            DifferentialDrivetrain::new(left_motors.clone(), right_motors.clone(), localization)
+        },
 
         // Intake
         intake: Intake::new([
