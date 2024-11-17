@@ -9,20 +9,18 @@ pub mod theme;
 
 use evian::{differential::Voltages, prelude::*};
 use subsystems::{
-    lady_brown::{LadyBrown, LadyBrownPosition, LadyBrownTarget}, Intake,
+    lady_brown::{LadyBrown, LadyBrownPosition, LadyBrownTarget},
+    Intake,
 };
 use theme::THEME_WAR_EAGLE;
 use vexide::prelude::*;
 
 pub struct Robot {
     pub controller: Controller,
-
     pub drivetrain: DifferentialDrivetrain,
     pub intake: Intake<2>,
-
     pub lady_brown: LadyBrown<2, Pid>,
     pub lady_brown_state: LadyBrownTarget,
-
     pub clamp: AdiDigitalOut,
 }
 
@@ -31,6 +29,7 @@ impl Compete for Robot {
         loop {
             let state = self.controller.state().unwrap_or_default();
 
+            // Single-stick arcade joystick control
             _ = self.drivetrain.set_voltages(
                 Voltages::from_arcade(
                     state.left_stick.y() * Motor::V5_MAX_VOLTAGE,
@@ -39,6 +38,7 @@ impl Compete for Robot {
                 .normalized(Motor::V5_MAX_VOLTAGE),
             );
 
+            // Raise/slower ladybrown when B is pressed.
             if state.button_b.is_now_pressed() {
                 self.lady_brown_state = match self.lady_brown_state {
                     LadyBrownTarget::Position(state) => match state {
@@ -55,14 +55,7 @@ impl Compete for Robot {
                 };
             }
 
-            if state.button_r1.is_pressed() {
-                _ = self.intake.set_voltage(Motor::V5_MAX_VOLTAGE);
-            } else if state.button_r2.is_pressed() {
-                _ = self.intake.set_voltage(-Motor::V5_MAX_VOLTAGE);
-            } else {
-                _ = self.intake.set_voltage(0.0);
-            }
-
+            // Manual ladybrown control using R1/R2.
             if state.button_l1.is_pressed() {
                 self.lady_brown_state =
                     LadyBrownTarget::Manual(MotorControl::Voltage(Motor::V5_MAX_VOLTAGE));
@@ -74,8 +67,19 @@ impl Compete for Robot {
                     LadyBrownTarget::Manual(MotorControl::Brake(BrakeMode::Hold));
             }
 
+            // Update ladybrown state machine with new possible target.
             _ = self.lady_brown.update(self.lady_brown_state);
 
+            // Intake control - R1/R2.
+            if state.button_r1.is_pressed() {
+                _ = self.intake.set_voltage(Motor::V5_MAX_VOLTAGE);
+            } else if state.button_r2.is_pressed() {
+                _ = self.intake.set_voltage(-Motor::V5_MAX_VOLTAGE);
+            } else {
+                _ = self.intake.set_voltage(0.0);
+            }
+
+            // A to toggle mogo mech.
             if state.button_a.is_now_pressed() {
                 _ = self.clamp.toggle();
             }
@@ -87,6 +91,7 @@ impl Compete for Robot {
 
 #[vexide::main(banner(theme = THEME_WAR_EAGLE))]
 async fn main(peripherals: Peripherals) {
+    // Left/right motors shared between drivetrain and odometry.
     let left_motors = shared_motors![
         Motor::new(peripherals.port_7, Gearset::Blue, Direction::Reverse),
         Motor::new(peripherals.port_8, Gearset::Blue, Direction::Reverse),
@@ -101,10 +106,14 @@ async fn main(peripherals: Peripherals) {
     ];
 
     let robot = Robot {
+        // Controller
         controller: peripherals.primary_controller,
+
+        // Differential Drivetrain
         drivetrain: DifferentialDrivetrain::new(
             left_motors.clone(),
             right_motors.clone(),
+            // Odometry
             ParallelWheelTracking::new(
                 Vec2::default(),
                 f64::to_radians(90.0),
@@ -113,10 +122,14 @@ async fn main(peripherals: Peripherals) {
                 None,
             ),
         ),
+
+        // Intake
         intake: Intake::new([
             Motor::new(peripherals.port_6, Gearset::Blue, Direction::Forward),
             Motor::new(peripherals.port_19, Gearset::Blue, Direction::Reverse),
         ]),
+
+        // Lady Brown Arm
         lady_brown: LadyBrown::new(
             [
                 Motor::new(peripherals.port_14, Gearset::Green, Direction::Forward),
@@ -126,6 +139,8 @@ async fn main(peripherals: Peripherals) {
             Pid::new(0.45, 0.0, 0.001, None),
         ),
         lady_brown_state: LadyBrownTarget::default(),
+
+        // Mogo
         clamp: AdiDigitalOut::new(peripherals.adi_h),
     };
 
