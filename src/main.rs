@@ -16,12 +16,12 @@ use theme::THEME_WAR_EAGLE;
 use vexide::prelude::*;
 
 pub struct Robot {
-    pub controller: Controller,
-    pub drivetrain: DifferentialDrivetrain,
-    pub intake: Intake<2>,
-    pub lady_brown: LadyBrown<2, Pid>,
-    pub lady_brown_state: LadyBrownTarget,
-    pub clamp: AdiDigitalOut,
+    controller: Controller,
+    drivetrain: DifferentialDrivetrain,
+    intake: Intake<2>,
+    lady_brown: LadyBrown<2, Pid>,
+    lady_brown_state: LadyBrownTarget,
+    clamp: AdiDigitalOut,
 }
 
 impl Compete for Robot {
