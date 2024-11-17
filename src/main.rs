@@ -113,9 +113,8 @@ async fn main(peripherals: Peripherals) {
         drivetrain: DifferentialDrivetrain::new(
             left_motors.clone(),
             right_motors.clone(),
-            // Odometry
             ParallelWheelTracking::new(
-                Vec2::default(),
+                Vec2::new(0.0, 0.0),
                 f64::to_radians(90.0),
                 TrackingWheel::new(left_motors.clone(), 3.25, 7.5, Some(36.0 / 48.0)),
                 TrackingWheel::new(right_motors.clone(), 3.25, 7.5, Some(36.0 / 48.0)),
