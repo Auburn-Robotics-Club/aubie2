@@ -1,14 +1,15 @@
 #![no_main]
 #![no_std]
 
+extern crate alloc;
+
 pub mod hardware;
 pub mod subsystems;
 pub mod theme;
 
-use evian::control::pid::Pid;
+use evian::{differential::Voltages, prelude::*};
 use subsystems::{
-    lady_brown::{LadyBrown, LadyBrownPosition, LadyBrownTarget},
-    Drivetrain, Intake,
+    lady_brown::{LadyBrown, LadyBrownPosition, LadyBrownTarget}, Intake,
 };
 use theme::THEME_WAR_EAGLE;
 use vexide::prelude::*;
@@ -16,7 +17,7 @@ use vexide::prelude::*;
 pub struct Robot {
     pub controller: Controller,
 
-    pub drivetrain: Drivetrain<4, 4>,
+    pub drivetrain: DifferentialDrivetrain,
     pub intake: Intake<2>,
 
     pub lady_brown: LadyBrown<2, Pid>,
@@ -30,18 +31,27 @@ impl Compete for Robot {
         loop {
             let state = self.controller.state().unwrap_or_default();
 
-            _ = self.drivetrain.arcade(
-                state.left_stick.y() * Motor::V5_MAX_VOLTAGE,
-                state.left_stick.x() * Motor::V5_MAX_VOLTAGE,
+            _ = self.drivetrain.set_voltages(
+                Voltages::from_arcade(
+                    state.left_stick.y() * Motor::V5_MAX_VOLTAGE,
+                    state.left_stick.x() * Motor::V5_MAX_VOLTAGE,
+                )
+                .normalized(Motor::V5_MAX_VOLTAGE),
             );
 
             if state.button_b.is_now_pressed() {
                 self.lady_brown_state = match self.lady_brown_state {
                     LadyBrownTarget::Position(state) => match state {
-                        LadyBrownPosition::Lowered => LadyBrownTarget::Position(LadyBrownPosition::Raised),
-                        LadyBrownPosition::Raised => LadyBrownTarget::Position(LadyBrownPosition::Lowered),
+                        LadyBrownPosition::Lowered => {
+                            LadyBrownTarget::Position(LadyBrownPosition::Raised)
+                        }
+                        LadyBrownPosition::Raised => {
+                            LadyBrownTarget::Position(LadyBrownPosition::Lowered)
+                        }
                     },
-                    LadyBrownTarget::Manual(_) => LadyBrownTarget::Position(LadyBrownPosition::Raised),
+                    LadyBrownTarget::Manual(_) => {
+                        LadyBrownTarget::Position(LadyBrownPosition::Raised)
+                    }
                 };
             }
 
@@ -77,21 +87,31 @@ impl Compete for Robot {
 
 #[vexide::main(banner(theme = THEME_WAR_EAGLE))]
 async fn main(peripherals: Peripherals) {
+    let left_motors = shared_motors![
+        Motor::new(peripherals.port_7, Gearset::Blue, Direction::Reverse),
+        Motor::new(peripherals.port_8, Gearset::Blue, Direction::Reverse),
+        Motor::new(peripherals.port_9, Gearset::Blue, Direction::Forward),
+        Motor::new(peripherals.port_10, Gearset::Blue, Direction::Reverse),
+    ];
+    let right_motors = shared_motors![
+        Motor::new(peripherals.port_1, Gearset::Blue, Direction::Forward),
+        Motor::new(peripherals.port_2, Gearset::Blue, Direction::Forward),
+        Motor::new(peripherals.port_3, Gearset::Blue, Direction::Forward),
+        Motor::new(peripherals.port_4, Gearset::Blue, Direction::Reverse),
+    ];
+
     let robot = Robot {
         controller: peripherals.primary_controller,
-        drivetrain: Drivetrain::new(
-            [
-                Motor::new(peripherals.port_7, Gearset::Blue, Direction::Reverse),
-                Motor::new(peripherals.port_8, Gearset::Blue, Direction::Reverse),
-                Motor::new(peripherals.port_9, Gearset::Blue, Direction::Forward),
-                Motor::new(peripherals.port_10, Gearset::Blue, Direction::Reverse),
-            ],
-            [
-                Motor::new(peripherals.port_1, Gearset::Blue, Direction::Forward),
-                Motor::new(peripherals.port_2, Gearset::Blue, Direction::Forward),
-                Motor::new(peripherals.port_3, Gearset::Blue, Direction::Forward),
-                Motor::new(peripherals.port_4, Gearset::Blue, Direction::Reverse),
-            ],
+        drivetrain: DifferentialDrivetrain::new(
+            left_motors.clone(),
+            right_motors.clone(),
+            ParallelWheelTracking::new(
+                Vec2::default(),
+                f64::to_radians(90.0),
+                TrackingWheel::new(left_motors.clone(), 3.25, 7.5, Some(36.0 / 48.0)),
+                TrackingWheel::new(right_motors.clone(), 3.25, 7.5, Some(36.0 / 48.0)),
+                None,
+            ),
         ),
         intake: Intake::new([
             Motor::new(peripherals.port_6, Gearset::Blue, Direction::Forward),
