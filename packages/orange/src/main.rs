@@ -3,22 +3,28 @@
 
 extern crate alloc;
 
-pub mod hardware;
-pub mod subsystems;
-pub mod theme;
+use core::time::Duration;
 
-use evian::prelude::*;
+use aubie2::{
+    subsystems::{
+        lady_brown::{LadyBrown, LadyBrownTarget},
+        Intake,
+    },
+    theme::THEME_WAR_EAGLE,
+};
+use evian::{
+    control::{AngularPid, Pid},
+    differential::motion::{BasicMotion, Seeking},
+    prelude::*,
+};
 use vexide::prelude::*;
 
-use subsystems::{
-    lady_brown::{LadyBrown, LadyBrownPosition, LadyBrownTarget},
-    Intake,
-};
-use theme::THEME_WAR_EAGLE;
+const LADY_BROWN_RAISED: Position = Position::from_degrees(304.0);
+const LADY_BROWN_LOWERED: Position = Position::from_degrees(337.0);
 
 pub struct Robot {
     controller: Controller,
-    drivetrain: DifferentialDrivetrain,
+    drivetrain: Drivetrain<Differential, ParallelWheelTracking>,
     intake: Intake<2>,
     lady_brown: LadyBrown<2, Pid>,
     lady_brown_state: LadyBrownTarget,
@@ -26,13 +32,44 @@ pub struct Robot {
 }
 
 impl Compete for Robot {
+    async fn autonomous(&mut self) {
+        let dt = &mut self.drivetrain;
+        let linear_pid = Pid::new(0.5, 0.0, 0.0, None);
+        let angular_pid = AngularPid::new(16.0, 0.0, 1.0, None);
+        let mut seeking = Seeking {
+            distance_controller: linear_pid,
+            angle_controller: angular_pid,
+            tolerances: Tolerances::new()
+                .error_tolerance(0.3)
+                .tolerance_duration(Duration::from_millis(100))
+                .timeout(Duration::from_secs(2)),
+        };
+        let mut basic = BasicMotion {
+            linear_controller: linear_pid,
+            angular_controller: angular_pid,
+            linear_tolerances: Tolerances::new()
+                .error_tolerance(0.3)
+                .tolerance_duration(Duration::from_millis(100))
+                .timeout(Duration::from_secs(2)),
+            angular_tolerances: Tolerances::new()
+                .error_tolerance(0.3)
+                .tolerance_duration(Duration::from_millis(100))
+                .timeout(Duration::from_secs(2)),
+        };
+
+        basic.turn_to_heading(dt, 0.0.deg()).await;
+        println!("Settled");
+
+        seeking.move_to_point(dt, (0.0, 10.0)).await;
+    }
+
     async fn driver(&mut self) {
         loop {
             let state = self.controller.state().unwrap_or_default();
 
             // Single-stick arcade joystick control
-            _ = self.drivetrain.set_voltages(
-                Voltages::from_arcade(
+            _ = self.drivetrain.motors.set_voltages(
+                DifferentialVoltages::from_arcade(
                     state.left_stick.y() * Motor::V5_MAX_VOLTAGE,
                     state.left_stick.x() * Motor::V5_MAX_VOLTAGE,
                 )
@@ -40,29 +77,22 @@ impl Compete for Robot {
             );
 
             // Raise/slower ladybrown when B is pressed.
-            if state.button_b.is_now_pressed() {
+            if state.button_l1.is_now_pressed() {
                 self.lady_brown_state = match self.lady_brown_state {
                     LadyBrownTarget::Position(state) => match state {
-                        LadyBrownPosition::Lowered => {
-                            LadyBrownTarget::Position(LadyBrownPosition::Raised)
-                        }
-                        LadyBrownPosition::Raised => {
-                            LadyBrownTarget::Position(LadyBrownPosition::Lowered)
-                        }
+                        LADY_BROWN_LOWERED => LadyBrownTarget::Position(LADY_BROWN_RAISED),
+                        LADY_BROWN_RAISED => LadyBrownTarget::Position(LADY_BROWN_LOWERED),
+                        _ => unreachable!(),
                     },
-                    LadyBrownTarget::Manual(_) => {
-                        LadyBrownTarget::Position(LadyBrownPosition::Raised)
-                    }
+                    LadyBrownTarget::Manual(_) => LadyBrownTarget::Position(LADY_BROWN_RAISED),
                 };
             }
 
             // Manual ladybrown control using R1/R2.
-            if state.button_l1.is_pressed() {
-                self.lady_brown_state =
-                    LadyBrownTarget::Manual(MotorControl::Voltage(Motor::V5_MAX_VOLTAGE));
-            } else if state.button_l2.is_pressed() {
-                self.lady_brown_state =
-                    LadyBrownTarget::Manual(MotorControl::Voltage(-Motor::V5_MAX_VOLTAGE));
+            if state.right_stick.y() != 0.0 {
+                self.lady_brown_state = LadyBrownTarget::Manual(MotorControl::Voltage(
+                    state.right_stick.y() * Motor::V5_MAX_VOLTAGE,
+                ));
             } else if let LadyBrownTarget::Manual(_) = self.lady_brown_state {
                 self.lady_brown_state =
                     LadyBrownTarget::Manual(MotorControl::Brake(BrakeMode::Hold));
@@ -72,9 +102,9 @@ impl Compete for Robot {
             _ = self.lady_brown.update(self.lady_brown_state);
 
             // Intake control - R1/R2.
-            if state.button_r1.is_pressed() {
+            if state.button_b.is_pressed() {
                 _ = self.intake.set_voltage(Motor::V5_MAX_VOLTAGE);
-            } else if state.button_r2.is_pressed() {
+            } else if state.button_down.is_pressed() {
                 _ = self.intake.set_voltage(-Motor::V5_MAX_VOLTAGE);
             } else {
                 _ = self.intake.set_voltage(0.0);
@@ -92,6 +122,9 @@ impl Compete for Robot {
 
 #[vexide::main(banner(theme = THEME_WAR_EAGLE))]
 async fn main(peripherals: Peripherals) {
+    let mut imu = InertialSensor::new(peripherals.port_11);
+    imu.calibrate().await.unwrap();
+
     let robot = Robot {
         // Controller
         controller: peripherals.primary_controller,
@@ -112,17 +145,17 @@ async fn main(peripherals: Peripherals) {
                 Motor::new(peripherals.port_4, Gearset::Blue, Direction::Reverse),
             ];
 
-            // Localization (odometry)
-            let localization = ParallelWheelTracking::new(
-                Vec2::new(0.0, 0.0),
-                f64::to_radians(90.0),
-                TrackingWheel::new(left_motors.clone(), 3.25, 7.5, Some(36.0 / 48.0)),
-                TrackingWheel::new(right_motors.clone(), 3.25, 7.5, Some(36.0 / 48.0)),
-                None,
-            );
-
             // Drivetrain Model
-            DifferentialDrivetrain::new(left_motors.clone(), right_motors.clone(), localization)
+            Drivetrain::new(
+                Differential::new(left_motors.clone(), right_motors.clone()),
+                ParallelWheelTracking::new(
+                    Vec2::new(0.0, 0.0),
+                    90.0.deg(),
+                    TrackingWheel::new(left_motors.clone(), 3.25, 7.5, Some(36.0 / 48.0)),
+                    TrackingWheel::new(right_motors.clone(), 3.25, 7.5, Some(36.0 / 48.0)),
+                    Some(imu),
+                ),
+            )
         },
 
         // Intake
@@ -137,10 +170,10 @@ async fn main(peripherals: Peripherals) {
                 Motor::new(peripherals.port_14, Gearset::Green, Direction::Forward),
                 Motor::new(peripherals.port_16, Gearset::Green, Direction::Reverse),
             ],
-            RotationSensor::new(peripherals.port_13, Direction::Forward),
+            RotationSensor::new(peripherals.port_18, Direction::Forward),
             Pid::new(0.45, 0.0, 0.001, None),
         ),
-        lady_brown_state: LadyBrownTarget::default(),
+        lady_brown_state: LadyBrownTarget::Position(LADY_BROWN_LOWERED),
 
         // Mogo
         clamp: AdiDigitalOut::new(peripherals.adi_h),

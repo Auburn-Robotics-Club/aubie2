@@ -1,17 +1,8 @@
-[package]
-name = "aubie2"
-version = "0.1.0"
-edition = "2021"
+[workspace]
+members = ["packages/*"]
+resolver = "2"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-# These fields configure default behavior for uploads with `cargo v5`.
-[package.metadata.v5]
-name = "AUBIE2"
-slot = 1
-icon = "cool-x"
-compress = true
-
-[dependencies]
-vexide = "0.5.0-rc.2"
-evian = { git = "https://github.com/vexide/evian.git", branch = "vexide-rc" }
+[workspace.dependencies]
+vexide = { path = "../vexide/packages/vexide" }
+evian = { path = "../evian" }
+aubie2 = { path = "packages/aubie2" }
