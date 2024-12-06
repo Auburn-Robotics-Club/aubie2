@@ -3,6 +3,8 @@
 
 extern crate alloc;
 
+mod autons;
+
 use aubie2::{
     subsystems::{
         lady_brown::{LadyBrown, LadyBrownTarget},
@@ -27,20 +29,7 @@ pub struct Robot {
 
 impl Compete for Robot {
     async fn autonomous(&mut self) {
-        // let dt = &mut self.drivetrain;
-        // let mut mtp = MoveToPoint {
-        //     distance_controller: Pid::new(0.5, 0.0, 0.0, None),
-        //     angle_controller: AngularPid::new(0.5, 0.0, 0.0, None),
-        //     settler: Settler::new()
-        //         .error_tolerance(0.3)
-        //         .tolerance_duration(Duration::from_millis(100))
-        //         .timeout(Duration::from_secs(2)),
-        // };
-        println!("{:?}", self.drivetrain.tracking.heading().as_degrees());
-        self.drivetrain.tracking.set_heading(Angle::ZERO);
-        println!("{:?}", self.drivetrain.tracking.heading().as_degrees());
-
-        // mtp.move_to_point(dt, (0.0, 10.0)).await;
+        autons::tuning(self).await.unwrap();
     }
 
     async fn driver(&mut self) {

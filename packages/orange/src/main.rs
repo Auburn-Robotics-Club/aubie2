@@ -3,7 +3,7 @@
 
 extern crate alloc;
 
-use core::time::Duration;
+mod autons;
 
 use aubie2::{
     subsystems::{
@@ -12,11 +12,7 @@ use aubie2::{
     },
     theme::THEME_WAR_EAGLE,
 };
-use evian::{
-    control::{AngularPid, Pid},
-    differential::motion::{BasicMotion, Seeking},
-    prelude::*,
-};
+use evian::{control::Pid, prelude::*};
 use vexide::prelude::*;
 
 const LADY_BROWN_RAISED: Position = Position::from_degrees(304.0);
@@ -33,34 +29,7 @@ pub struct Robot {
 
 impl Compete for Robot {
     async fn autonomous(&mut self) {
-        let dt = &mut self.drivetrain;
-        let linear_pid = Pid::new(0.5, 0.0, 0.0, None);
-        let angular_pid = AngularPid::new(16.0, 0.0, 1.0, None);
-        let mut seeking = Seeking {
-            distance_controller: linear_pid,
-            angle_controller: angular_pid,
-            tolerances: Tolerances::new()
-                .error_tolerance(0.3)
-                .tolerance_duration(Duration::from_millis(100))
-                .timeout(Duration::from_secs(2)),
-        };
-        let mut basic = BasicMotion {
-            linear_controller: linear_pid,
-            angular_controller: angular_pid,
-            linear_tolerances: Tolerances::new()
-                .error_tolerance(0.3)
-                .tolerance_duration(Duration::from_millis(100))
-                .timeout(Duration::from_secs(2)),
-            angular_tolerances: Tolerances::new()
-                .error_tolerance(0.3)
-                .tolerance_duration(Duration::from_millis(100))
-                .timeout(Duration::from_secs(2)),
-        };
-
-        basic.turn_to_heading(dt, 0.0.deg()).await;
-        println!("Settled");
-
-        seeking.move_to_point(dt, (0.0, 10.0)).await;
+        autons::tuning(self).await.unwrap();
     }
 
     async fn driver(&mut self) {
