@@ -42,7 +42,7 @@ impl Compete for Robot {
                 info!("Route completed successfully in {:?}.", start.elapsed());
             }
             Err(err) => {
-                info!(
+                error!(
                     "Route encountered error after {:?}: {}",
                     start.elapsed(),
                     err
@@ -50,6 +50,7 @@ impl Compete for Robot {
             }
         }
 
+        // Dump tracking info to get ending pose of robot.
         info!(
             "Position: {}\nHeading: {}° ({}rad)",
             self.drivetrain.tracking.position(),
