@@ -16,8 +16,8 @@ use aubie2::{
     theme::THEME_WAR_EAGLE,
 };
 use evian::{control::Pid, prelude::*};
-use log::LevelFilter;
-use vexide::prelude::*;
+use log::{error, info, LevelFilter};
+use vexide::{core::time::Instant, prelude::*};
 
 pub const LADY_BROWN_LOWERED: Position = Position::from_degrees(337.0);
 pub const LADY_BROWN_RAISED: Position = Position::from_degrees(304.0);
@@ -35,8 +35,27 @@ pub struct Robot {
 
 impl Compete for Robot {
     async fn autonomous(&mut self) {
-        autons::skills(self).await.unwrap();
-        // autons::testing(self).await.unwrap();
+        let start = Instant::now();
+
+        match autons::skills(self).await {
+            Ok(()) => {
+                info!("Route completed successfully in {:?}.", start.elapsed());
+            }
+            Err(err) => {
+                info!(
+                    "Route encountered error after {:?}: {}",
+                    start.elapsed(),
+                    err
+                );
+            }
+        }
+
+        info!(
+            "Position: {}\nHeading: {}° ({}rad)",
+            self.drivetrain.tracking.position(),
+            self.drivetrain.tracking.heading().as_degrees(),
+            self.drivetrain.tracking.heading().as_radians()
+        );
     }
 
     async fn driver(&mut self) {
@@ -102,16 +121,18 @@ impl Compete for Robot {
 async fn main(peripherals: Peripherals) {
     LOGGER.init(LevelFilter::Trace).unwrap();
 
-    println!("Start");
+    info!("Calibrating IMU");
     let mut imu = InertialSensor::new(peripherals.port_11);
 
-    #[allow(clippy::collapsible_if)]
-    if imu.calibrate().await.is_err() {
-        if imu.calibrate().await.is_err() {
+    if let Err(err) = imu.calibrate().await {
+        error!("IMU Calibration failed: {err}. Retrying...");
+        if let Err(err) = imu.calibrate().await {
+            error!("IMU Calibration failed again: {err}. Waiting 3 seconds...");
             sleep(Duration::from_secs(3)).await;
         }
     }
-    println!("Calibrated");
+
+    info!("Calibration complete.");
 
     let robot = Robot {
         // Controller

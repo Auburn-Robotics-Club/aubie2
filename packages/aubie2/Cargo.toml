@@ -6,5 +6,5 @@ edition = "2021"
 [dependencies]
 vexide = { workspace = true }
 evian = { workspace = true }
-log = "0.4.22"
+log = { workspace = true }
 vex-sdk = "0.26.0"

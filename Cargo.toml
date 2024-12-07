@@ -6,3 +6,4 @@ resolver = "2"
 vexide = { path = "../vexide/packages/vexide" }
 evian = { path = "../evian" }
 aubie2 = { path = "packages/aubie2" }
+log = "0.4.22"

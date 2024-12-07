@@ -7,17 +7,23 @@ use core::{
     time::Duration,
 };
 
+use log::info;
 use vexide::{
-    core::{println, time::Instant},
+    core::time::Instant,
     prelude::{sleep, spawn, BrakeMode, Motor, OpticalSensor, SmartDevice, Task},
 };
 
+/// Intake Rejection Color
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum RejectColor {
+    /// Reject blue rings
     Blue,
+
+    /// Reject red rings
     Red,
 }
 
+/// Ring intake with color sorting capabilities.
 pub struct Intake {
     _task: Task<()>,
     voltage: Arc<AtomicI32>,
@@ -40,30 +46,28 @@ impl Intake {
                 optical.set_led_brightness(100.0).unwrap();
                 _ = optical.set_integration_time(Duration::from_millis(8));
 
-                let mut reject = false;
+                let mut rejecting = false;
                 let mut reject_timestamp = Instant::now();
 
                 loop {
                     let voltage = voltage.load(Ordering::Acquire) as f64;
 
                     if let Some(reject_color) = *reject_color.borrow() {
-                        match reject_color {
-                            RejectColor::Blue => {
-                                if let Ok(hue) = optical.hue() {
-                                    if (100.0..200.0).contains(&hue) && !reject {
-                                        println!("Rejecting ring");
-                                        reject_timestamp = Instant::now();
-                                        reject = true;
-                                    }
-                                }
-                            }
-                            RejectColor::Red => {
-                                todo!()
+                        if let Ok(hue) = optical.hue() {
+                            let matches_bad_ring_color = match reject_color {
+                                RejectColor::Blue => (100.0..200.0).contains(&hue),
+                                RejectColor::Red => todo!(),
+                            };
+
+                            if matches_bad_ring_color && !rejecting {
+                                info!("Rejected ring with color {:?}.", reject_color);
+                                reject_timestamp = Instant::now();
+                                rejecting = true;
                             }
                         }
                     }
 
-                    if (reject
+                    if (rejecting
                         && reject_timestamp.elapsed() > Duration::from_millis(75)
                         && reject_timestamp.elapsed() < Duration::from_millis(250))
                         && voltage > 0.0
@@ -72,8 +76,8 @@ impl Intake {
                             _ = motor.brake(BrakeMode::Hold);
                         }
                     } else {
-                        if reject && reject_timestamp.elapsed() > Duration::from_millis(250) {
-                            reject = false;
+                        if rejecting && reject_timestamp.elapsed() > Duration::from_millis(250) {
+                            rejecting = false;
                         }
 
                         for motor in motors.iter_mut() {

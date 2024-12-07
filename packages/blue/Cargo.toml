@@ -11,4 +11,4 @@ icon = "cool-x"
 aubie2 = { workspace = true }
 vexide = { workspace = true }
 evian = { workspace = true }
-log = "0.4.22"
+log = { workspace = true }

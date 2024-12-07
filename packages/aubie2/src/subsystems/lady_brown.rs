@@ -4,6 +4,7 @@ use alloc::rc::Rc;
 use core::{cell::RefCell, time::Duration};
 
 use evian::control::ControlLoop;
+use log::warn;
 use vexide::{
     devices::{
         position::Position,
@@ -15,6 +16,7 @@ use vexide::{
     prelude::{sleep, spawn, Task},
 };
 
+/// Lady brown wallstake mechanism.
 pub struct LadyBrown {
     target: Rc<RefCell<LadyBrownTarget>>,
     _task: Task<()>,
@@ -34,17 +36,17 @@ impl LadyBrown {
             _task: spawn(async move {
                 loop {
                     let motor_target = match *target.borrow() {
-                        LadyBrownTarget::Position(state) => {
-                            if let Ok(position) = rotation_sensor.position() {
-                                MotorControl::Voltage(feedback.update(
-                                    state.as_degrees(),
-                                    position.as_degrees(),
-                                    Motor::UPDATE_INTERVAL,
-                                ))
-                            } else {
+                        LadyBrownTarget::Position(state) => match rotation_sensor.position() {
+                            Ok(position) => MotorControl::Voltage(feedback.update(
+                                state.as_degrees(),
+                                position.as_degrees(),
+                                Motor::UPDATE_INTERVAL,
+                            )),
+                            Err(err) => {
+                                warn!("{err}");
                                 MotorControl::Voltage(0.0)
                             }
-                        }
+                        },
                         LadyBrownTarget::Manual(v) => v,
                     };
 
