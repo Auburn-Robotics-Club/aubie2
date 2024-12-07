@@ -1,0 +1,13 @@
+[package]
+name = "carson"
+version = "0.1.0"
+edition = "2021"
+
+[package.metadata.v5]
+slot = 1
+icon = "cool-x"
+
+[dependencies]
+aubie2 = { workspace = true }
+vexide = { workspace = true }
+evian = { workspace = true }

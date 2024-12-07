@@ -1,1 +1,3 @@
-pub mod switch_board;
+mod switch_board;
+
+pub use switch_board::SwitchBoard;

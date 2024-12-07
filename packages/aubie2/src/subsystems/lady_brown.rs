@@ -1,42 +1,69 @@
+extern crate alloc;
+
+use alloc::rc::Rc;
+use core::{cell::RefCell, time::Duration};
+
 use evian::control::ControlLoop;
-use vexide::devices::{
-    position::Position,
-    smart::{
-        motor::{Motor, MotorControl, MotorError},
-        RotationSensor, SmartDevice,
+use vexide::{
+    devices::{
+        position::Position,
+        smart::{
+            motor::{Motor, MotorControl},
+            RotationSensor, SmartDevice,
+        },
     },
+    prelude::{sleep, spawn, Task},
 };
 
-pub struct LadyBrown<const COUNT: usize, F: ControlLoop<Input = f64, Output = f64>> {
-    pub motors: [Motor; COUNT],
-    pub rotation_sensor: RotationSensor,
-    pub feedback: F,
+pub struct LadyBrown {
+    target: Rc<RefCell<LadyBrownTarget>>,
+    _task: Task<()>,
 }
 
-impl<const COUNT: usize, F: ControlLoop<Input = f64, Output = f64>> LadyBrown<COUNT, F> {
-    pub fn new(motors: [Motor; COUNT], rotation_sensor: RotationSensor, feedback: F) -> Self {
+impl LadyBrown {
+    pub fn new<const COUNT: usize, F: ControlLoop<Input = f64, Output = f64> + 'static>(
+        mut motors: [Motor; COUNT],
+        rotation_sensor: RotationSensor,
+        mut feedback: F,
+    ) -> Self {
+        let target = Rc::new(RefCell::new(LadyBrownTarget::Manual(
+            MotorControl::Voltage(0.0),
+        )));
         Self {
-            motors,
-            rotation_sensor,
-            feedback,
+            target: target.clone(),
+            _task: spawn(async move {
+                loop {
+                    let motor_target = match *target.borrow() {
+                        LadyBrownTarget::Position(state) => {
+                            if let Ok(position) = rotation_sensor.position() {
+                                MotorControl::Voltage(feedback.update(
+                                    state.as_degrees(),
+                                    position.as_degrees(),
+                                    Motor::UPDATE_INTERVAL,
+                                ))
+                            } else {
+                                MotorControl::Voltage(0.0)
+                            }
+                        }
+                        LadyBrownTarget::Manual(v) => v,
+                    };
+
+                    for motor in motors.iter_mut() {
+                        _ = motor.set_target(motor_target);
+                    }
+
+                    sleep(Duration::from_millis(5)).await;
+                }
+            }),
         }
     }
 
-    pub fn update(&mut self, target: LadyBrownTarget) -> Result<(), MotorError> {
-        let motor_target = match target {
-            LadyBrownTarget::Position(state) => MotorControl::Voltage(self.feedback.update(
-                state.as_degrees(),
-                self.rotation_sensor.position()?.as_degrees(),
-                Motor::UPDATE_INTERVAL,
-            )),
-            LadyBrownTarget::Manual(v) => v,
-        };
+    pub fn set_target(&mut self, target: LadyBrownTarget) {
+        *self.target.borrow_mut() = target;
+    }
 
-        for motor in self.motors.iter_mut() {
-            motor.set_target(motor_target)?;
-        }
-
-        Ok(())
+    pub fn target(&self) -> LadyBrownTarget {
+        *self.target.borrow()
     }
 }
 

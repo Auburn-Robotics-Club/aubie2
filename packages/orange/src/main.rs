@@ -5,8 +5,11 @@ extern crate alloc;
 
 mod autons;
 
+use core::time::Duration;
+
 use aubie2::{
     subsystems::{
+        intake::RejectColor,
         lady_brown::{LadyBrown, LadyBrownTarget},
         Intake,
     },
@@ -15,24 +18,27 @@ use aubie2::{
 use evian::{control::Pid, prelude::*};
 use vexide::prelude::*;
 
-const LADY_BROWN_RAISED: Position = Position::from_degrees(304.0);
-const LADY_BROWN_LOWERED: Position = Position::from_degrees(337.0);
+pub const LADY_BROWN_LOWERED: Position = Position::from_degrees(337.0);
+pub const LADY_BROWN_RAISED: Position = Position::from_degrees(304.0);
+pub const LADY_BROWN_SCORED: Position = Position::from_degrees(180.0);
 
 pub struct Robot {
     controller: Controller,
     drivetrain: Drivetrain<Differential, ParallelWheelTracking>,
-    intake: Intake<2>,
-    lady_brown: LadyBrown<2, Pid>,
-    lady_brown_state: LadyBrownTarget,
+    intake: Intake,
+    lady_brown: LadyBrown,
     clamp: AdiDigitalOut,
 }
 
 impl Compete for Robot {
     async fn autonomous(&mut self) {
-        autons::tuning(self).await.unwrap();
+        autons::skills(self).await.unwrap();
+        // autons::testing(self).await.unwrap();
     }
 
     async fn driver(&mut self) {
+        self.intake.set_reject_color(None);
+
         loop {
             let state = self.controller.state().unwrap_or_default();
 
@@ -47,36 +53,36 @@ impl Compete for Robot {
 
             // Raise/slower ladybrown when B is pressed.
             if state.button_l1.is_now_pressed() {
-                self.lady_brown_state = match self.lady_brown_state {
+                self.lady_brown.set_target(match self.lady_brown.target() {
                     LadyBrownTarget::Position(state) => match state {
                         LADY_BROWN_LOWERED => LadyBrownTarget::Position(LADY_BROWN_RAISED),
                         LADY_BROWN_RAISED => LadyBrownTarget::Position(LADY_BROWN_LOWERED),
                         _ => unreachable!(),
                     },
                     LadyBrownTarget::Manual(_) => LadyBrownTarget::Position(LADY_BROWN_RAISED),
-                };
+                });
             }
 
             // Manual ladybrown control using R1/R2.
             if state.right_stick.y() != 0.0 {
-                self.lady_brown_state = LadyBrownTarget::Manual(MotorControl::Voltage(
-                    state.right_stick.y() * Motor::V5_MAX_VOLTAGE,
-                ));
-            } else if let LadyBrownTarget::Manual(_) = self.lady_brown_state {
-                self.lady_brown_state =
-                    LadyBrownTarget::Manual(MotorControl::Brake(BrakeMode::Hold));
+                self.lady_brown
+                    .set_target(LadyBrownTarget::Manual(MotorControl::Voltage(
+                        state.right_stick.y() * Motor::V5_MAX_VOLTAGE,
+                    )));
+            } else if let LadyBrownTarget::Manual(_) = self.lady_brown.target() {
+                self.lady_brown
+                    .set_target(LadyBrownTarget::Manual(MotorControl::Brake(
+                        BrakeMode::Hold,
+                    )));
             }
-
-            // Update ladybrown state machine with new possible target.
-            _ = self.lady_brown.update(self.lady_brown_state);
 
             // Intake control - R1/R2.
             if state.button_b.is_pressed() {
-                _ = self.intake.set_voltage(Motor::V5_MAX_VOLTAGE);
+                self.intake.set_voltage(Motor::V5_MAX_VOLTAGE);
             } else if state.button_down.is_pressed() {
-                _ = self.intake.set_voltage(-Motor::V5_MAX_VOLTAGE);
+                self.intake.set_voltage(-Motor::V5_MAX_VOLTAGE);
             } else {
-                _ = self.intake.set_voltage(0.0);
+                self.intake.set_voltage(0.0);
             }
 
             // A to toggle mogo mech.
@@ -91,8 +97,16 @@ impl Compete for Robot {
 
 #[vexide::main(banner(theme = THEME_WAR_EAGLE))]
 async fn main(peripherals: Peripherals) {
+    println!("Start");
     let mut imu = InertialSensor::new(peripherals.port_11);
-    imu.calibrate().await.unwrap();
+    
+    #[allow(clippy::collapsible_if)]
+    if imu.calibrate().await.is_err() {
+        if imu.calibrate().await.is_err() {
+            sleep(Duration::from_secs(3)).await;
+        }
+    }
+    println!("Calibrated");
 
     let robot = Robot {
         // Controller
@@ -119,19 +133,23 @@ async fn main(peripherals: Peripherals) {
                 Differential::new(left_motors.clone(), right_motors.clone()),
                 ParallelWheelTracking::new(
                     Vec2::new(0.0, 0.0),
-                    90.0.deg(),
-                    TrackingWheel::new(left_motors.clone(), 3.25, 7.5, Some(36.0 / 48.0)),
-                    TrackingWheel::new(right_motors.clone(), 3.25, 7.5, Some(36.0 / 48.0)),
+                    270.0.deg(),
+                    TrackingWheel::new(left_motors.clone(), 3.25, 5.75, Some(36.0 / 48.0)),
+                    TrackingWheel::new(right_motors.clone(), 3.25, 5.75, Some(36.0 / 48.0)),
                     Some(imu),
                 ),
             )
         },
 
         // Intake
-        intake: Intake::new([
-            Motor::new(peripherals.port_6, Gearset::Blue, Direction::Forward),
-            Motor::new(peripherals.port_19, Gearset::Blue, Direction::Reverse),
-        ]),
+        intake: Intake::new(
+            [
+                Motor::new(peripherals.port_6, Gearset::Blue, Direction::Forward),
+                Motor::new(peripherals.port_19, Gearset::Blue, Direction::Reverse),
+            ],
+            OpticalSensor::new(peripherals.port_21),
+            None,
+        ),
 
         // Lady Brown Arm
         lady_brown: LadyBrown::new(
@@ -142,7 +160,6 @@ async fn main(peripherals: Peripherals) {
             RotationSensor::new(peripherals.port_18, Direction::Forward),
             Pid::new(0.45, 0.0, 0.001, None),
         ),
-        lady_brown_state: LadyBrownTarget::Position(LADY_BROWN_LOWERED),
 
         // Mogo
         clamp: AdiDigitalOut::new(peripherals.adi_h),
