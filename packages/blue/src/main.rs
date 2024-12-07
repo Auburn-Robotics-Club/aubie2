@@ -62,11 +62,20 @@ impl Compete for Robot {
 
             // Manual ladybrown control using R1/R2.
             if state.button_l1.is_pressed() {
-                self.lady_brown.set_target(LadyBrownTarget::Manual(MotorControl::Voltage(Motor::V5_MAX_VOLTAGE)));
+                self.lady_brown
+                    .set_target(LadyBrownTarget::Manual(MotorControl::Voltage(
+                        Motor::V5_MAX_VOLTAGE,
+                    )));
             } else if state.button_l2.is_pressed() {
-                self.lady_brown.set_target(LadyBrownTarget::Manual(MotorControl::Voltage(-Motor::V5_MAX_VOLTAGE)));
+                self.lady_brown
+                    .set_target(LadyBrownTarget::Manual(MotorControl::Voltage(
+                        -Motor::V5_MAX_VOLTAGE,
+                    )));
             } else if let LadyBrownTarget::Manual(_) = self.lady_brown.target() {
-                self.lady_brown.set_target(LadyBrownTarget::Manual(MotorControl::Brake(BrakeMode::Hold)));
+                self.lady_brown
+                    .set_target(LadyBrownTarget::Manual(MotorControl::Brake(
+                        BrakeMode::Hold,
+                    )));
             }
 
             // Intake control - R1/R2.
@@ -92,7 +101,7 @@ impl Compete for Robot {
 async fn main(peripherals: Peripherals) {
     println!("Start");
     let mut imu = InertialSensor::new(peripherals.port_21);
-    
+
     #[allow(clippy::collapsible_if)]
     if imu.calibrate().await.is_err() {
         if imu.calibrate().await.is_err() {

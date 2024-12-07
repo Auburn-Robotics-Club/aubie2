@@ -3,7 +3,9 @@ use core::{error::Error, f64::consts::PI, time::Duration};
 
 use aubie2::subsystems::{intake::RejectColor, lady_brown::LadyBrownTarget};
 use evian::{
-    control::{AngularPid, Pid, Tolerances}, differential::motion::{BasicMotion, Seeking}, drivetrain, prelude::*
+    control::{AngularPid, Pid, Tolerances},
+    differential::motion::{BasicMotion, Seeking},
+    prelude::*,
 };
 use vexide::prelude::*;
 
@@ -138,7 +140,7 @@ pub async fn skills(bot: &mut Robot) -> Result<(), Box<dyn Error>> {
     sleep(Duration::from_millis(700)).await;
 
     // Intake final ring
-    
+
     basic.drive_distance(dt, -16.0).await;
     basic.turn_to_heading(dt, 135.0.deg()).await;
     basic.drive_distance(dt, 24.0).await;
@@ -159,7 +161,6 @@ pub async fn skills(bot: &mut Robot) -> Result<(), Box<dyn Error>> {
     basic.drive_distance(dt, 42.0).await;
 
     println!("{}", dt.tracking.position());
-
 
     Ok(())
 }

@@ -9,7 +9,6 @@ use core::time::Duration;
 
 use aubie2::{
     subsystems::{
-        intake::RejectColor,
         lady_brown::{LadyBrown, LadyBrownTarget},
         Intake,
     },
@@ -99,7 +98,7 @@ impl Compete for Robot {
 async fn main(peripherals: Peripherals) {
     println!("Start");
     let mut imu = InertialSensor::new(peripherals.port_11);
-    
+
     #[allow(clippy::collapsible_if)]
     if imu.calibrate().await.is_err() {
         if imu.calibrate().await.is_err() {
