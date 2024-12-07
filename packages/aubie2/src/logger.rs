@@ -15,10 +15,6 @@ const ESCAPES: [Option<&str>; 6] = [
     Some("\x1B[37m"), // Trace (white)
 ];
 
-/// Kernel logging implementation.
-///
-/// Implements the [`Log`] trait allowing us to to log information to the host
-/// over a UART [`HostBoundPacket`] `KernelSerial` packet.
 pub struct SerialLogger;
 
 impl SerialLogger {
