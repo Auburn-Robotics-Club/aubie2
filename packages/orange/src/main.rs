@@ -8,6 +8,7 @@ mod autons;
 use core::time::Duration;
 
 use aubie2::{
+    logger::SerialLogger,
     subsystems::{
         lady_brown::{LadyBrown, LadyBrownTarget},
         Intake,
@@ -15,11 +16,14 @@ use aubie2::{
     theme::THEME_WAR_EAGLE,
 };
 use evian::{control::Pid, prelude::*};
+use log::LevelFilter;
 use vexide::prelude::*;
 
 pub const LADY_BROWN_LOWERED: Position = Position::from_degrees(337.0);
 pub const LADY_BROWN_RAISED: Position = Position::from_degrees(304.0);
 pub const LADY_BROWN_SCORED: Position = Position::from_degrees(180.0);
+
+static LOGGER: SerialLogger = SerialLogger;
 
 pub struct Robot {
     controller: Controller,
@@ -96,6 +100,8 @@ impl Compete for Robot {
 
 #[vexide::main(banner(theme = THEME_WAR_EAGLE))]
 async fn main(peripherals: Peripherals) {
+    LOGGER.init(LevelFilter::Trace).unwrap();
+
     println!("Start");
     let mut imu = InertialSensor::new(peripherals.port_11);
 
