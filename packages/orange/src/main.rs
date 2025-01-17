@@ -61,7 +61,7 @@ impl Compete for Robot {
 
     async fn driver(&mut self) {
         self.intake.set_reject_color(None);
-
+        
         loop {
             let state = self.controller.state().unwrap_or_default();
 
@@ -75,7 +75,7 @@ impl Compete for Robot {
             );
 
             // Raise/slower ladybrown when B is pressed.
-            if state.button_l1.is_now_pressed() {
+            if state.button_b.is_now_pressed() {
                 self.lady_brown.set_target(match self.lady_brown.target() {
                     LadyBrownTarget::Position(state) => match state {
                         LADY_BROWN_LOWERED => LadyBrownTarget::Position(LADY_BROWN_RAISED),
@@ -87,10 +87,15 @@ impl Compete for Robot {
             }
 
             // Manual ladybrown control using R1/R2.
-            if state.right_stick.y() != 0.0 {
+            if state.button_l1.is_pressed() {
                 self.lady_brown
                     .set_target(LadyBrownTarget::Manual(MotorControl::Voltage(
-                        state.right_stick.y() * Motor::V5_MAX_VOLTAGE,
+                        Motor::V5_MAX_VOLTAGE,
+                    )));
+            } else if state.button_l2.is_pressed() {
+                self.lady_brown
+                    .set_target(LadyBrownTarget::Manual(MotorControl::Voltage(
+                        -Motor::V5_MAX_VOLTAGE,
                     )));
             } else if let LadyBrownTarget::Manual(_) = self.lady_brown.target() {
                 self.lady_brown
@@ -100,9 +105,9 @@ impl Compete for Robot {
             }
 
             // Intake control - R1/R2.
-            if state.button_b.is_pressed() {
+            if state.button_r1.is_pressed() {
                 self.intake.set_voltage(Motor::V5_MAX_VOLTAGE);
-            } else if state.button_down.is_pressed() {
+            } else if state.button_r2.is_pressed() {
                 self.intake.set_voltage(-Motor::V5_MAX_VOLTAGE);
             } else {
                 self.intake.set_voltage(0.0);
