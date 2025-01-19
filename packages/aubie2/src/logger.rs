@@ -38,7 +38,7 @@ impl Log for SerialLogger {
             let submin_secs = timestamp.as_secs() % 60;
 
             vexide::core::println!(
-                "{:02}:{:02}:{:02} {}[{}]\x1B[0m kernel: {}\n",
+                "{:02}:{:02}:{:02} {}[{}]\x1B[0m {}",
                 mins,
                 submin_secs,
                 timestamp.subsec_millis(),

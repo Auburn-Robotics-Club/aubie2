@@ -3,28 +3,28 @@
 
 use core::time::Duration;
 
-use aubie2::{hardware::SwitchBoard, theme::THEME_WAR_EAGLE};
-use vexide::{devices::adi::digital::LogicLevel, prelude::*};
+use aubie2::{hardware::{Solenoid, SwitchBoard}, theme::THEME_WAR_EAGLE};
+use vexide::prelude::*;
 
 #[vexide::main(banner(theme = THEME_WAR_EAGLE))]
 async fn main(peripherals: Peripherals) {
-    let mut switchboard = SwitchBoard::new(peripherals.port_1);
+    let mut board = SwitchBoard::new(peripherals.port_1);
 
     sleep(Duration::from_millis(500)).await;
 
     loop {
         println!("High");
-        switchboard.set_a(LogicLevel::High).unwrap();
-        switchboard.set_b(LogicLevel::High).unwrap();
-        switchboard.set_c(LogicLevel::High).unwrap();
-        switchboard.set_d(LogicLevel::High).unwrap();
+        board.solenoid_a.set_high().unwrap();
+        board.solenoid_b.set_high().unwrap();
+        board.solenoid_c.set_high().unwrap();
+        board.solenoid_d.set_high().unwrap();
         sleep(Duration::from_secs(1)).await;
 
         println!("Low");
-        switchboard.set_a(LogicLevel::Low).unwrap();
-        switchboard.set_b(LogicLevel::Low).unwrap();
-        switchboard.set_c(LogicLevel::Low).unwrap();
-        switchboard.set_d(LogicLevel::Low).unwrap();
+        board.solenoid_a.set_low().unwrap();
+        board.solenoid_b.set_low().unwrap();
+        board.solenoid_c.set_low().unwrap();
+        board.solenoid_d.set_low().unwrap();
         sleep(Duration::from_secs(1)).await;
     }
 }

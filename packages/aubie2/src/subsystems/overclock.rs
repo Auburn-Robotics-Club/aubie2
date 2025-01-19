@@ -1,20 +1,22 @@
 use evian::control::ControlLoop;
-use vexide::{devices::{
-    adi::AdiDigitalOut,
-    smart::{Motor, RotationSensor},
-}, prelude::{spawn, Task}};
+use vexide::{
+    devices::smart::{Motor, RotationSensor},
+    prelude::{spawn, Task},
+};
 
-pub struct Overclock {
-    lift: [AdiDigitalOut; 2],
+use crate::hardware::Solenoid;
+
+pub struct Overclock<S: Solenoid> {
+    lift: [S; 2],
     _task: Task<()>,
 }
 
-impl Overclock {
+impl<S: Solenoid> Overclock<S> {
     pub fn new<F: ControlLoop<Input = f64, Output = f64>>(
-        lift: [AdiDigitalOut; 2],
-        _dunker: Motor,
+        lift: [S; 2],
+        _flipper: Motor,
         _rotation_sensor: RotationSensor,
-        _dunker_feedback: F,
+        _flipper_feedback: F,
     ) -> Self {
         Overclock {
             lift,

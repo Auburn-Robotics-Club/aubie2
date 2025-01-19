@@ -10,8 +10,7 @@ use core::time::Duration;
 use aubie2::{
     logger::SerialLogger,
     subsystems::{
-        lady_brown::{LadyBrown, LadyBrownTarget},
-        Intake,
+        lady_brown::{LadyBrown, LadyBrownTarget}, Grabber, Intake
     },
     theme::THEME_WAR_EAGLE,
 };
@@ -31,6 +30,7 @@ pub struct Robot {
     intake: Intake,
     lady_brown: LadyBrown,
     clamp: AdiDigitalOut,
+    grabber: Grabber<AdiDigitalOut, AdiDigitalOut>,
 }
 
 impl Compete for Robot {
@@ -61,7 +61,7 @@ impl Compete for Robot {
 
     async fn driver(&mut self) {
         self.intake.set_reject_color(None);
-        
+
         loop {
             let state = self.controller.state().unwrap_or_default();
 
@@ -84,6 +84,13 @@ impl Compete for Robot {
                     },
                     LadyBrownTarget::Manual(_) => LadyBrownTarget::Position(LADY_BROWN_RAISED),
                 });
+            }
+
+            // Grabber arm
+            if state.right_stick.y() > 0.15 {
+                _ = self.grabber.extend();
+            } else if state.right_stick.y() < -0.15 {
+                _ = self.grabber.retract();
             }
 
             // Manual ladybrown control using R1/R2.
@@ -127,6 +134,7 @@ impl Compete for Robot {
 async fn main(peripherals: Peripherals) {
     LOGGER.init(LevelFilter::Trace).unwrap();
 
+    println!("Hi");
     info!("Calibrating IMU");
     let mut imu = InertialSensor::new(peripherals.port_11);
 
@@ -195,6 +203,8 @@ async fn main(peripherals: Peripherals) {
 
         // Mogo
         clamp: AdiDigitalOut::new(peripherals.adi_h),
+
+        grabber: Grabber::new(AdiDigitalOut::new(peripherals.adi_g), AdiDigitalOut::new(peripherals.adi_a)),
     };
 
     robot.compete().await;

@@ -5,8 +5,13 @@ extern crate alloc;
 
 use core::time::Duration;
 
-use aubie2::{logger::SerialLogger, subsystems::overclock::Overclock, theme::THEME_WAR_EAGLE};
-use evian::prelude::*;
+use aubie2::{
+    hardware::{Solenoid, SolenoidSwitch, SwitchBoard},
+    logger::SerialLogger,
+    subsystems::overclock::Overclock,
+    theme::THEME_WAR_EAGLE,
+};
+use evian::{control::Pid, prelude::*};
 use log::{error, info, LevelFilter};
 use vexide::prelude::*;
 
@@ -14,10 +19,11 @@ static LOGGER: SerialLogger = SerialLogger;
 
 pub struct Robot {
     controller: Controller,
-    // drivetrain: Drivetrain<Differential, ParallelWheelTracking>,
-    // lift: Overclock,
+    drivetrain: Drivetrain<Differential, ParallelWheelTracking>,
+    clamp: SolenoidSwitch,
+    #[allow(unused)]
+    lift: Overclock<SolenoidSwitch>,
     intake: [Motor; 2],
-    // clamp: AdiDigitalOut,
 }
 
 impl Compete for Robot {
@@ -26,13 +32,13 @@ impl Compete for Robot {
             let state = self.controller.state().unwrap_or_default();
 
             // Single-stick arcade joystick control
-            // _ = self.drivetrain.motors.set_voltages(
-            //     DifferentialVoltages::from_arcade(
-            //         state.left_stick.y() * Motor::V5_MAX_VOLTAGE,
-            //         state.left_stick.x() * Motor::V5_MAX_VOLTAGE,
-            //     )
-            //     .normalized(Motor::V5_MAX_VOLTAGE),
-            // );
+            _ = self.drivetrain.motors.set_voltages(
+                DifferentialVoltages::from_arcade(
+                    -state.left_stick.y() * Motor::V5_MAX_VOLTAGE,
+                    state.left_stick.x() * Motor::V5_MAX_VOLTAGE,
+                )
+                .normalized(Motor::V5_MAX_VOLTAGE),
+            );
 
             // Intake control
             for motor in self.intake.iter_mut() {
@@ -46,9 +52,9 @@ impl Compete for Robot {
             }
 
             // A to toggle mogo mech.
-            // if state.button_a.is_now_pressed() {
-            //     _ = self.clamp.toggle();
-            // }
+            if state.button_a.is_now_pressed() {
+                _ = self.clamp.toggle();
+            }
 
             sleep(Motor::UPDATE_INTERVAL).await;
         }
@@ -72,46 +78,55 @@ async fn main(peripherals: Peripherals) {
 
     info!("Calibration complete.");
 
+    let solenoids = SwitchBoard::new(peripherals.port_13);
+
     let robot = Robot {
         // Controller
         controller: peripherals.primary_controller,
 
-        // // Drivetrain Model & Localization
-        // drivetrain: {
-        //     // Left/right motors shared between drivetrain and odometry.
-        //     let left_motors = shared_motors![
-        //         Motor::new(peripherals.port_7, Gearset::Blue, Direction::Reverse),
-        //         Motor::new(peripherals.port_8, Gearset::Blue, Direction::Reverse),
-        //         Motor::new(peripherals.port_9, Gearset::Blue, Direction::Forward),
-        //         Motor::new(peripherals.port_10, Gearset::Blue, Direction::Reverse),
-        //     ];
-        //     let right_motors = shared_motors![
-        //         Motor::new(peripherals.port_1, Gearset::Blue, Direction::Forward),
-        //         Motor::new(peripherals.port_2, Gearset::Blue, Direction::Forward),
-        //         Motor::new(peripherals.port_3, Gearset::Blue, Direction::Forward),
-        //         Motor::new(peripherals.port_4, Gearset::Blue, Direction::Reverse),
-        //     ];
+        // Drivetrain Model & Localization
+        drivetrain: {
+            // Left/right motors shared between drivetrain and odometry.
+            let left_motors = shared_motors![
+                Motor::new(peripherals.port_20, Gearset::Blue, Direction::Reverse),
+                Motor::new(peripherals.port_19, Gearset::Blue, Direction::Forward),
+                Motor::new(peripherals.port_18, Gearset::Blue, Direction::Forward),
+                Motor::new(peripherals.port_17, Gearset::Blue, Direction::Reverse),
+            ];
+            let right_motors = shared_motors![
+                Motor::new(peripherals.port_10, Gearset::Blue, Direction::Forward),
+                Motor::new(peripherals.port_9, Gearset::Blue, Direction::Reverse),
+                Motor::new(peripherals.port_8, Gearset::Blue, Direction::Reverse),
+                Motor::new(peripherals.port_7, Gearset::Blue, Direction::Forward),
+            ];
 
-        //     // Drivetrain Model
-        //     Drivetrain::new(
-        //         Differential::new(left_motors.clone(), right_motors.clone()),
-        //         ParallelWheelTracking::new(
-        //             Vec2::new(0.0, 0.0),
-        //             270.0.deg(),
-        //             TrackingWheel::new(left_motors.clone(), 3.25, 5.75, Some(36.0 / 48.0)),
-        //             TrackingWheel::new(right_motors.clone(), 3.25, 5.75, Some(36.0 / 48.0)),
-        //             Some(imu),
-        //         ),
-        //     )
-        // },
+            // Drivetrain Model
+            Drivetrain::new(
+                Differential::new(left_motors.clone(), right_motors.clone()),
+                ParallelWheelTracking::new(
+                    Vec2::new(0.0, 0.0),
+                    270.0.deg(),
+                    TrackingWheel::new(left_motors.clone(), 3.25, 5.75, Some(36.0 / 48.0)),
+                    TrackingWheel::new(right_motors.clone(), 3.25, 5.75, Some(36.0 / 48.0)),
+                    Some(imu),
+                ),
+            )
+        },
 
-        // lift: todo!(),
         intake: [
-            Motor::new(peripherals.port_2, Gearset::Blue, Direction::Forward),
+            Motor::new(peripherals.port_1, Gearset::Blue, Direction::Forward),
             Motor::new(peripherals.port_12, Gearset::Blue, Direction::Reverse),
         ],
-        // // Mogo
-        // clamp: AdiDigitalOut::new(peripherals.adi_h),
+
+        lift: Overclock::new(
+            [solenoids.solenoid_c, solenoids.solenoid_b],
+            Motor::new(peripherals.port_4, Gearset::Green, Direction::Forward),
+            RotationSensor::new(peripherals.port_3, Direction::Forward),
+            Pid::new(0.45, 0.0, 0.001, None),
+        ),
+
+        // Mogo clamp
+        clamp: solenoids.solenoid_a,
     };
 
     robot.compete().await;
