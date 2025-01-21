@@ -1,38 +1,85 @@
+extern crate alloc;
+
 use evian::control::ControlLoop;
+use alloc::rc::Rc;
+use core::{cell::RefCell, time::Duration};
 use vexide::{
-    devices::smart::{Motor, RotationSensor},
-    prelude::{spawn, Task},
+    devices::{
+        smart::{Motor, RotationSensor},
+        PortError,
+    },
+    prelude::{sleep, spawn, Position, SmartDevice, Task},
 };
 
 use crate::hardware::Solenoid;
 
 pub struct Overclock<S: Solenoid> {
-    lift: [S; 2],
+    lift: S,
+    target: Rc<RefCell<Position>>,
     _task: Task<()>,
 }
 
 impl<S: Solenoid> Overclock<S> {
-    pub fn new<F: ControlLoop<Input = f64, Output = f64>>(
-        lift: [S; 2],
-        _flipper: Motor,
-        _rotation_sensor: RotationSensor,
-        _flipper_feedback: F,
+    pub fn new<F: ControlLoop<Input = f64, Output = f64> + 'static>(
+        lift: S,
+        mut flipper: Motor,
+        rotation_sensor: RotationSensor,
+        mut flipper_feedback: F,
     ) -> Self {
+        let target = Rc::new(RefCell::new(Position::from_degrees(70.0)));
+
         Overclock {
             lift,
-            _task: spawn(async move {}),
+            target: target.clone(),
+            _task: spawn(async move {
+                loop {
+                    let voltage = match rotation_sensor.position() {
+                        Ok(position) => {
+                            flipper_feedback.update(
+                                target.borrow().as_degrees(),
+                                position.as_degrees(),
+                                Motor::UPDATE_INTERVAL,
+                            )
+                        }
+                        Err(err) => {
+                            log::warn!("{err}");
+                            0.0
+                        }
+                    };
+
+                    _ = flipper.set_voltage(voltage);
+
+                    sleep(Duration::from_millis(5)).await;
+                }
+            }),
         }
     }
 
-    pub fn raise(&mut self) {
-        // Error will never be returned since we are using onboard ADI.
-        _ = self.lift[0].set_high();
-        _ = self.lift[1].set_high();
+    pub fn raise(&mut self) -> Result<(), S::Error> {
+        self.lift.set_high()
     }
 
-    pub fn lower(&mut self) {
-        // Error will never be returned since we are using onboard ADI.
-        _ = self.lift[0].set_low();
-        _ = self.lift[1].set_low();
+    pub fn lower(&mut self) -> Result<(), S::Error> {
+        self.lift.set_low()
+    }
+
+    pub fn toggle(&mut self) -> Result<(), S::Error> {
+        self.lift.toggle()
+    }
+
+    pub fn flip(&mut self) -> Result<(), S::Error> {
+        self.lift.toggle()
+    }
+
+    pub fn set_target(&mut self, target: Position) {
+        *self.target.borrow_mut() = target;
+    }
+
+    pub fn target(&self) -> Position {
+        *self.target.borrow()
+    }
+
+    pub fn is_raised(&self) -> Result<bool, S::Error> {
+        self.lift.is_high()
     }
 }

@@ -31,4 +31,12 @@ impl<P: Solenoid, E: Solenoid> Grabber<P, E> {
     pub fn release(&mut self) -> Result<(), P::Error> {
         self.pincher.set_low()
     }
+
+    pub fn toggle_pincher(&mut self) -> Result<(), P::Error> {
+        self.pincher.toggle()
+    }
+
+    pub fn toggle_extender(&mut self) -> Result<(), E::Error> {
+        self.extender.toggle()
+    }
 }

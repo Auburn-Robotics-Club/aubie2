@@ -10,7 +10,7 @@ use core::time::Duration;
 use aubie2::{
     logger::SerialLogger,
     subsystems::{
-        lady_brown::{LadyBrown, LadyBrownTarget}, Grabber, Intake
+        intake::RejectColor, lady_brown::{LadyBrown, LadyBrownTarget}, Grabber, Intake
     },
     theme::THEME_WAR_EAGLE,
 };
@@ -37,7 +37,7 @@ impl Compete for Robot {
     async fn autonomous(&mut self) {
         let start = Instant::now();
 
-        match autons::skills(self).await {
+        match autons::red_positive_right(self).await {
             Ok(()) => {
                 info!("Route completed successfully in {:?}.", start.elapsed());
             }
@@ -60,7 +60,7 @@ impl Compete for Robot {
     }
 
     async fn driver(&mut self) {
-        self.intake.set_reject_color(None);
+        self.intake.set_reject_color(Some(RejectColor::Blue));
 
         loop {
             let state = self.controller.state().unwrap_or_default();
@@ -84,13 +84,6 @@ impl Compete for Robot {
                     },
                     LadyBrownTarget::Manual(_) => LadyBrownTarget::Position(LADY_BROWN_RAISED),
                 });
-            }
-
-            // Grabber arm
-            if state.right_stick.y() > 0.15 {
-                _ = self.grabber.extend();
-            } else if state.right_stick.y() < -0.15 {
-                _ = self.grabber.retract();
             }
 
             // Manual ladybrown control using R1/R2.
@@ -118,6 +111,14 @@ impl Compete for Robot {
                 self.intake.set_voltage(-Motor::V5_MAX_VOLTAGE);
             } else {
                 self.intake.set_voltage(0.0);
+            }
+
+            if state.button_x.is_now_pressed() {
+                _ = self.grabber.toggle_extender();
+            }
+            
+            if state.button_y.is_now_pressed() {
+                _ = self.grabber.toggle_pincher();
             }
 
             // A to toggle mogo mech.
@@ -184,6 +185,7 @@ async fn main(peripherals: Peripherals) {
         // Intake
         intake: Intake::new(
             [
+                Motor::new(peripherals.port_13, Gearset::Blue, Direction::Reverse),
                 Motor::new(peripherals.port_6, Gearset::Blue, Direction::Forward),
                 Motor::new(peripherals.port_19, Gearset::Blue, Direction::Reverse),
             ],

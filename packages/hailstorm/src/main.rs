@@ -20,9 +20,10 @@ static LOGGER: SerialLogger = SerialLogger;
 pub struct Robot {
     controller: Controller,
     drivetrain: Drivetrain<Differential, ParallelWheelTracking>,
-    clamp: SolenoidSwitch,
+    clamp: AdiDigitalOut,
+    doinker: AdiDigitalOut,
     #[allow(unused)]
-    lift: Overclock<SolenoidSwitch>,
+    lift: Overclock<AdiDigitalOut>,
     intake: [Motor; 2],
 }
 
@@ -34,7 +35,7 @@ impl Compete for Robot {
             // Single-stick arcade joystick control
             _ = self.drivetrain.motors.set_voltages(
                 DifferentialVoltages::from_arcade(
-                    -state.left_stick.y() * Motor::V5_MAX_VOLTAGE,
+                    state.left_stick.y() * Motor::V5_MAX_VOLTAGE,
                     state.left_stick.x() * Motor::V5_MAX_VOLTAGE,
                 )
                 .normalized(Motor::V5_MAX_VOLTAGE),
@@ -43,9 +44,9 @@ impl Compete for Robot {
             // Intake control
             for motor in self.intake.iter_mut() {
                 if state.button_b.is_pressed() {
-                    _ = motor.set_voltage(Motor::V5_MAX_VOLTAGE * 0.87);
+                    _ = motor.set_voltage(Motor::V5_MAX_VOLTAGE * 0.9);
                 } else if state.button_down.is_pressed() {
-                    _ = motor.set_voltage(-Motor::V5_MAX_VOLTAGE * 0.87);
+                    _ = motor.set_voltage(-Motor::V5_MAX_VOLTAGE * 1.0);
                 } else {
                     _ = motor.set_voltage(0.0);
                 }
@@ -54,6 +55,28 @@ impl Compete for Robot {
             // A to toggle mogo mech.
             if state.button_a.is_now_pressed() {
                 _ = self.clamp.toggle();
+            }
+
+            if state.button_r1.is_now_pressed() {
+                if self.lift.target() == Position::from_degrees(70.0) {
+                    self.lift.set_target(Position::from_degrees(290.0));
+                } else {
+                    self.lift.set_target(Position::from_degrees(70.0));
+
+                    if self.lift.is_raised().unwrap_or_default() {
+                        _ = self.lift.lower();
+                    }
+                }
+            }
+
+            if state.button_l1.is_now_pressed() {
+                _ = self.doinker.toggle();
+            }
+
+            if state.right_stick.y() < -0.7 {
+                _ = self.lift.raise();
+            } else if state.right_stick.y() > 0.7 {
+                _ = self.lift.lower();
             }
 
             sleep(Motor::UPDATE_INTERVAL).await;
@@ -77,8 +100,6 @@ async fn main(peripherals: Peripherals) {
     }
 
     info!("Calibration complete.");
-
-    let solenoids = SwitchBoard::new(peripherals.port_13);
 
     let robot = Robot {
         // Controller
@@ -119,14 +140,16 @@ async fn main(peripherals: Peripherals) {
         ],
 
         lift: Overclock::new(
-            [solenoids.solenoid_c, solenoids.solenoid_b],
+            AdiDigitalOut::new(peripherals.adi_h),
             Motor::new(peripherals.port_4, Gearset::Green, Direction::Forward),
             RotationSensor::new(peripherals.port_3, Direction::Forward),
             Pid::new(0.45, 0.0, 0.001, None),
         ),
 
         // Mogo clamp
-        clamp: solenoids.solenoid_a,
+        // dohickey c
+        clamp: AdiDigitalOut::new(peripherals.adi_f),
+        doinker: AdiDigitalOut::new(peripherals.adi_e),
     };
 
     robot.compete().await;

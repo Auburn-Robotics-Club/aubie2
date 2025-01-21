@@ -44,8 +44,10 @@ pub struct SwitchBoard {
 
 impl SwitchBoard {
     pub fn new(port: SmartPort) -> Self {
+        let mut serial = SerialPort::open(port, 9600);
+
         let shared_state = Rc::new(RefCell::new(SwitchBoardState {
-            serial: SerialPort::open(port, 9600),
+            serial,
             state: 0,
         }));
 
@@ -79,6 +81,7 @@ struct SwitchBoardState {
 impl SwitchBoardState {
     fn set(&mut self, shift: u8, level: LogicLevel) -> Result<(), SerialError> {
         self.state = self.state & !(1 << shift) | ((level.is_high() as u8) << shift);
+        log::debug!("Solenoid {:b}", self.state);
         self.serial.write_byte(self.state)
     }
 

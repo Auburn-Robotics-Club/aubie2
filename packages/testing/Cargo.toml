@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [package.metadata.v5]
-upload-strategy = "patch"
+upload-strategy = "differential"
 slot = 1
 icon = "cool-x"
 

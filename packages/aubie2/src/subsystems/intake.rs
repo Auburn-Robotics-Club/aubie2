@@ -43,45 +43,65 @@ impl Intake {
             voltage: voltage.clone(),
             reject_color: reject_color.clone(),
             _task: spawn(async move {
-                optical.set_led_brightness(100.0).unwrap();
-                _ = optical.set_integration_time(Duration::from_millis(8));
+                _ = optical.set_integration_time(OpticalSensor::MIN_INTEGRATION_TIME);
+                // _ = optical.set_led_brightness(1.0);
 
                 let mut rejecting = false;
                 let mut reject_timestamp = Instant::now();
+                let mut prox_timestamp = Instant::now();
+                let mut in_prox = false;
 
                 loop {
                     let voltage = voltage.load(Ordering::Acquire) as f64;
 
                     if let Some(reject_color) = *reject_color.borrow() {
-                        if let Ok(hue) = optical.hue() {
-                            let matches_bad_ring_color = match reject_color {
-                                RejectColor::Blue => (100.0..200.0).contains(&hue),
-                                RejectColor::Red => todo!(),
-                            };
+                        if let Ok(prox) = optical.proximity() {
+                            if prox > 0.2 && !in_prox {
+                                prox_timestamp = Instant::now();
+                                in_prox = true;
+                            }
 
-                            if matches_bad_ring_color && !rejecting {
-                                info!("Rejected ring with color {:?}.", reject_color);
-                                reject_timestamp = Instant::now();
-                                rejecting = true;
+                            if in_prox && prox_timestamp.elapsed() > Duration::from_millis(15) {
+                                in_prox = false;
                             }
                         }
-                    }
 
-                    if (rejecting
-                        && reject_timestamp.elapsed() > Duration::from_millis(75)
-                        && reject_timestamp.elapsed() < Duration::from_millis(250))
-                        && voltage > 0.0
-                    {
-                        for motor in motors.iter_mut() {
-                            _ = motor.brake(BrakeMode::Hold);
-                        }
-                    } else {
-                        if rejecting && reject_timestamp.elapsed() > Duration::from_millis(250) {
-                            rejecting = false;
+                        if in_prox {
+                            if let Ok(hue) = optical.hue() {
+                                log::debug!("hue {}", hue);
+                                let matches_bad_ring_color = in_prox
+                                    && match reject_color {
+                                        RejectColor::Blue => (80.0..250.0).contains(&hue),
+                                        RejectColor::Red => todo!(),
+                                    };
+    
+                                if matches_bad_ring_color && !rejecting {
+                                    info!(
+                                        "Rejected {:?} ring with hue {}.",
+                                        reject_color, hue
+                                    );
+                                    reject_timestamp = Instant::now();
+                                    rejecting = true;
+                                }
+                            }
                         }
 
-                        for motor in motors.iter_mut() {
-                            _ = motor.set_voltage(voltage);
+                        let reject_elapsed = reject_timestamp.elapsed();
+
+                        if rejecting && reject_elapsed > Duration::from_millis(80) && reject_elapsed < Duration::from_millis(200)
+                            && voltage > 0.0
+                        {
+                            for motor in motors.iter_mut() {
+                                _ = motor.brake(BrakeMode::Hold);
+                            }
+                        } else {
+                            if rejecting && reject_elapsed > Duration::from_millis(200) {
+                                rejecting = false;
+                            }
+    
+                            for motor in motors.iter_mut() {
+                                _ = motor.set_voltage(voltage);
+                            }
                         }
                     }
 
