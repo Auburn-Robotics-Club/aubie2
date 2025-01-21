@@ -37,7 +37,7 @@ impl Compete for Robot {
     async fn autonomous(&mut self) {
         let start = Instant::now();
 
-        match autons::red_positive_right(self).await {
+        match autons::blue_positive_right(self).await {
             Ok(()) => {
                 info!("Route completed successfully in {:?}.", start.elapsed());
             }
@@ -60,7 +60,7 @@ impl Compete for Robot {
     }
 
     async fn driver(&mut self) {
-        self.intake.set_reject_color(Some(RejectColor::Blue));
+        self.intake.set_reject_color(None);
 
         loop {
             let state = self.controller.state().unwrap_or_default();

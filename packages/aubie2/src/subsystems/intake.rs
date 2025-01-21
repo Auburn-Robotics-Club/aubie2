@@ -56,7 +56,7 @@ impl Intake {
 
                     if let Some(reject_color) = *reject_color.borrow() {
                         if let Ok(prox) = optical.proximity() {
-                            if prox > 0.2 && !in_prox {
+                            if prox > 0.5 && !in_prox {
                                 prox_timestamp = Instant::now();
                                 in_prox = true;
                             }
@@ -69,39 +69,38 @@ impl Intake {
                         if in_prox {
                             if let Ok(hue) = optical.hue() {
                                 log::debug!("hue {}", hue);
-                                let matches_bad_ring_color = in_prox
-                                    && match reject_color {
-                                        RejectColor::Blue => (80.0..250.0).contains(&hue),
-                                        RejectColor::Red => todo!(),
-                                    };
-    
-                                if matches_bad_ring_color && !rejecting {
-                                    info!(
-                                        "Rejected {:?} ring with hue {}.",
-                                        reject_color, hue
-                                    );
-                                    reject_timestamp = Instant::now();
-                                    rejecting = true;
-                                }
+                                // let matches_bad_ring_color = in_prox
+                                //     && match reject_color {
+                                //         RejectColor::Blue => (80.0..250.0).contains(&hue),
+                                //         RejectColor::Red => todo!(),
+                                //     };
+
+                                // if matches_bad_ring_color && !rejecting {
+                                //     info!("Rejected {:?} ring with hue {}.", reject_color, hue);
+                                //     reject_timestamp = Instant::now();
+                                //     rejecting = true;
+                                // }
                             }
                         }
+                    }
 
-                        let reject_elapsed = reject_timestamp.elapsed();
+                    let reject_elapsed = reject_timestamp.elapsed();
 
-                        if rejecting && reject_elapsed > Duration::from_millis(80) && reject_elapsed < Duration::from_millis(200)
-                            && voltage > 0.0
-                        {
-                            for motor in motors.iter_mut() {
-                                _ = motor.brake(BrakeMode::Hold);
-                            }
-                        } else {
-                            if rejecting && reject_elapsed > Duration::from_millis(200) {
-                                rejecting = false;
-                            }
-    
-                            for motor in motors.iter_mut() {
-                                _ = motor.set_voltage(voltage);
-                            }
+                    if rejecting
+                        && reject_elapsed > Duration::from_millis(80)
+                        && reject_elapsed < Duration::from_millis(200)
+                        && voltage > 0.0
+                    {
+                        for motor in motors.iter_mut() {
+                            _ = motor.brake(BrakeMode::Hold);
+                        }
+                    } else {
+                        if rejecting && reject_elapsed > Duration::from_millis(200) {
+                            rejecting = false;
+                        }
+
+                        for motor in motors.iter_mut() {
+                            _ = motor.set_voltage(voltage);
                         }
                     }
 
