@@ -6,14 +6,8 @@ pub struct Grabber<P: Solenoid, E: Solenoid> {
 }
 
 impl<P: Solenoid, E: Solenoid> Grabber<P, E> {
-    pub fn new(
-        pincher: P,
-        extender: E,
-    ) -> Self {
-        Self {
-            pincher,
-            extender,
-        }
+    pub fn new(pincher: P, extender: E) -> Self {
+        Self { pincher, extender }
     }
 
     pub fn extend(&mut self) -> Result<(), E::Error> {

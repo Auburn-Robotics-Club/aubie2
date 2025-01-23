@@ -10,7 +10,9 @@ use core::time::Duration;
 use aubie2::{
     logger::SerialLogger,
     subsystems::{
-        intake::RejectColor, lady_brown::{LadyBrown, LadyBrownTarget}, Grabber, Intake
+        intake::RejectColor,
+        lady_brown::{LadyBrown, LadyBrownTarget},
+        Grabber, Intake,
     },
     theme::THEME_WAR_EAGLE,
 };
@@ -37,7 +39,7 @@ impl Compete for Robot {
     async fn autonomous(&mut self) {
         let start = Instant::now();
 
-        match autons::blue_positive_right(self).await {
+        match autons::blue_carter_special(self).await {
             Ok(()) => {
                 info!("Route completed successfully in {:?}.", start.elapsed());
             }
@@ -116,7 +118,7 @@ impl Compete for Robot {
             if state.button_x.is_now_pressed() {
                 _ = self.grabber.toggle_extender();
             }
-            
+
             if state.button_y.is_now_pressed() {
                 _ = self.grabber.toggle_pincher();
             }
@@ -137,7 +139,7 @@ async fn main(peripherals: Peripherals) {
 
     println!("Hi");
     info!("Calibrating IMU");
-    let mut imu = InertialSensor::new(peripherals.port_11);
+    let mut imu = InertialSensor::new(peripherals.port_12);
 
     if let Err(err) = imu.calibrate().await {
         error!("IMU Calibration failed: {err}. Retrying...");
@@ -187,8 +189,12 @@ async fn main(peripherals: Peripherals) {
             [
                 Motor::new(peripherals.port_13, Gearset::Blue, Direction::Reverse),
                 Motor::new(peripherals.port_6, Gearset::Blue, Direction::Forward),
-                Motor::new(peripherals.port_19, Gearset::Blue, Direction::Reverse),
             ],
+            [Motor::new(
+                peripherals.port_19,
+                Gearset::Blue,
+                Direction::Reverse,
+            )],
             OpticalSensor::new(peripherals.port_21),
             None,
         ),
@@ -206,7 +212,10 @@ async fn main(peripherals: Peripherals) {
         // Mogo
         clamp: AdiDigitalOut::new(peripherals.adi_h),
 
-        grabber: Grabber::new(AdiDigitalOut::new(peripherals.adi_g), AdiDigitalOut::new(peripherals.adi_a)),
+        grabber: Grabber::new(
+            AdiDigitalOut::new(peripherals.adi_g),
+            AdiDigitalOut::new(peripherals.adi_a),
+        ),
     };
 
     robot.compete().await;

@@ -4,14 +4,15 @@
 use core::time::Duration;
 
 use aubie2::theme::THEME_WAR_EAGLE;
-use vexide::prelude::*;
-
-use vexide::devices::{
-    adi::digital::LogicLevel,
-    smart::{
-        serial::{SerialError, SerialPort},
-        SmartPort,
+use vexide::{
+    devices::{
+        adi::digital::LogicLevel,
+        smart::{
+            serial::{SerialError, SerialPort},
+            SmartPort,
+        },
     },
+    prelude::*,
 };
 
 #[derive(Debug, PartialEq)]

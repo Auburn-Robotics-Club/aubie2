@@ -16,7 +16,7 @@ use vexide::prelude::*;
 use super::{ANGULAR_PID, ANGULAR_TOLERANCES, LINEAR_PID, LINEAR_TOLERANCES};
 use crate::{Robot, LADY_BROWN_LOWERED, LADY_BROWN_RAISED, LADY_BROWN_SCORED};
 
-pub async fn blue_positive_right(bot: &mut Robot) -> Result<(), Box<dyn Error>> {
+pub async fn blue_carter_special(bot: &mut Robot) -> Result<(), Box<dyn Error>> {
     let dt = &mut bot.drivetrain;
     bot.intake.set_reject_color(Some(RejectColor::Red));
     dt.tracking.set_heading(90.0.deg());
@@ -39,10 +39,12 @@ pub async fn blue_positive_right(bot: &mut Robot) -> Result<(), Box<dyn Error>> 
     basic.linear_tolerances.tolerance_duration = Some(Duration::from_millis(0));
     basic.drive_distance_at_heading(dt, 34.0, 146.0.deg()).await;
     sleep(Duration::from_millis(10)).await;
-    _ = bot.grabber.pinch();
+    // _ = bot.grabber.pinch();
     basic.linear_controller.set_kp(1.0);
     basic.linear_tolerances.tolerance_duration = Some(Duration::from_millis(15));
 
+    return Ok(());
+    
     // Drag goal back and release from grabber
     basic.drive_distance(dt, -15.0).await;
     _ = bot.grabber.release();

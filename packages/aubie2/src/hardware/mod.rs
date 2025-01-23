@@ -1,5 +1,5 @@
-mod switch_board;
 mod solenoid;
+mod switch_board;
 
-pub use switch_board::{SwitchBoard, SolenoidSwitch};
 pub use solenoid::Solenoid;
+pub use switch_board::{SolenoidSwitch, SwitchBoard};

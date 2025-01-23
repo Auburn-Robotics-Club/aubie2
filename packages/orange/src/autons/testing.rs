@@ -1,5 +1,9 @@
 use alloc::boxed::Box;
-use core::{error::Error, f64::{consts::PI, MAX}, time::Duration};
+use core::{
+    error::Error,
+    f64::{consts::PI, MAX},
+    time::Duration,
+};
 
 use aubie2::subsystems::{intake::RejectColor, lady_brown::LadyBrownTarget};
 use evian::{
@@ -9,11 +13,10 @@ use evian::{
 };
 use vexide::prelude::*;
 
+use super::{ANGULAR_PID, ANGULAR_TOLERANCES, LINEAR_PID, LINEAR_TOLERANCES};
 use crate::{Robot, LADY_BROWN_LOWERED, LADY_BROWN_RAISED, LADY_BROWN_SCORED};
 
-use super::{ANGULAR_PID, ANGULAR_TOLERANCES, LINEAR_PID, LINEAR_TOLERANCES};
-
- pub async fn testing(bot: &mut Robot) -> Result<(), Box<dyn Error>> {
+pub async fn testing(bot: &mut Robot) -> Result<(), Box<dyn Error>> {
     let dt = &mut bot.drivetrain;
     let mut seeking = Seeking {
         distance_controller: LINEAR_PID,

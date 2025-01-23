@@ -26,25 +26,28 @@ pub enum RejectColor {
 /// Ring intake with color sorting capabilities.
 pub struct Intake {
     _task: Task<()>,
-    voltage: Arc<AtomicI32>,
+    top_voltage: Arc<AtomicI32>,
+    bottom_voltage: Arc<AtomicI32>,
     reject_color: Rc<RefCell<Option<RejectColor>>>,
 }
 
 impl Intake {
-    pub fn new<const COUNT: usize>(
-        mut motors: [Motor; COUNT],
+    pub fn new<const BOTTOM_COUNT: usize, const TOP_COUNT: usize>(
+        mut bottom_motors: [Motor; TOP_COUNT],
+        mut top_motors: [Motor; BOTTOM_COUNT],
         mut optical: OpticalSensor,
         reject_color: Option<RejectColor>,
     ) -> Self {
-        let voltage = Arc::new(AtomicI32::new(0));
+        let top_voltage = Arc::new(AtomicI32::new(0));
+        let bottom_voltage = Arc::new(AtomicI32::new(0));
         let reject_color = Rc::new(RefCell::new(reject_color));
 
         Self {
-            voltage: voltage.clone(),
+            top_voltage: top_voltage.clone(),
+            bottom_voltage: bottom_voltage.clone(),
             reject_color: reject_color.clone(),
             _task: spawn(async move {
-                _ = optical.set_integration_time(OpticalSensor::MIN_INTEGRATION_TIME);
-                // _ = optical.set_led_brightness(1.0);
+                _ = optical.set_integration_time(Duration::from_millis(6));
 
                 let mut rejecting = false;
                 let mut reject_timestamp = Instant::now();
@@ -52,7 +55,8 @@ impl Intake {
                 let mut in_prox = false;
 
                 loop {
-                    let voltage = voltage.load(Ordering::Acquire) as f64;
+                    let top_voltage = top_voltage.load(Ordering::Acquire) as f64;
+                    let bottom_voltage = bottom_voltage.load(Ordering::Acquire) as f64;
 
                     if let Some(reject_color) = *reject_color.borrow() {
                         if let Ok(prox) = optical.proximity() {
@@ -68,18 +72,21 @@ impl Intake {
 
                         if in_prox {
                             if let Ok(hue) = optical.hue() {
-                                log::debug!("hue {}", hue);
-                                // let matches_bad_ring_color = in_prox
-                                //     && match reject_color {
-                                //         RejectColor::Blue => (80.0..250.0).contains(&hue),
-                                //         RejectColor::Red => todo!(),
-                                //     };
+                                log::debug!("Hue in proximity: {}", hue);
+                                let matches_bad_ring_color = in_prox
+                                    && match reject_color {
+                                        RejectColor::Blue => (67.0..250.0).contains(&hue),
+                                        RejectColor::Red => {
+                                            (0.0..40.0).contains(&hue)
+                                                || (340.0..360.0).contains(&hue)
+                                        }
+                                    };
 
-                                // if matches_bad_ring_color && !rejecting {
-                                //     info!("Rejected {:?} ring with hue {}.", reject_color, hue);
-                                //     reject_timestamp = Instant::now();
-                                //     rejecting = true;
-                                // }
+                                if matches_bad_ring_color && !rejecting {
+                                    info!("Rejected {:?} ring with hue {}.", reject_color, hue);
+                                    reject_timestamp = Instant::now();
+                                    rejecting = true;
+                                }
                             }
                         }
                     }
@@ -89,18 +96,23 @@ impl Intake {
                     if rejecting
                         && reject_elapsed > Duration::from_millis(80)
                         && reject_elapsed < Duration::from_millis(200)
-                        && voltage > 0.0
                     {
-                        for motor in motors.iter_mut() {
-                            _ = motor.brake(BrakeMode::Hold);
+                        if top_voltage > 0.0 {
+                            for motor in top_motors.iter_mut() {
+                                _ = motor.brake(BrakeMode::Hold);
+                            }
                         }
                     } else {
                         if rejecting && reject_elapsed > Duration::from_millis(200) {
                             rejecting = false;
                         }
 
-                        for motor in motors.iter_mut() {
-                            _ = motor.set_voltage(voltage);
+                        for motor in top_motors.iter_mut() {
+                            _ = motor.set_voltage(top_voltage);
+                        }
+
+                        for motor in bottom_motors.iter_mut() {
+                            _ = motor.set_voltage(bottom_voltage);
                         }
                     }
 
@@ -111,7 +123,16 @@ impl Intake {
     }
 
     pub fn set_voltage(&mut self, voltage: f64) {
-        self.voltage.store(voltage as i32, Ordering::Release);
+        self.set_top_voltage(voltage);
+        self.set_bottom_voltage(voltage);
+    }
+
+    pub fn set_top_voltage(&mut self, voltage: f64) {
+        self.bottom_voltage.store(voltage as i32, Ordering::Release);
+    }
+
+    pub fn set_bottom_voltage(&mut self, voltage: f64) {
+        self.top_voltage.store(voltage as i32, Ordering::Release);
     }
 
     pub fn set_reject_color(&mut self, reject_color: Option<RejectColor>) {

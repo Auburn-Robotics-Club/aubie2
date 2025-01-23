@@ -1,8 +1,9 @@
 extern crate alloc;
 
-use evian::control::ControlLoop;
 use alloc::rc::Rc;
 use core::{cell::RefCell, time::Duration};
+
+use evian::control::ControlLoop;
 use vexide::{
     devices::{
         smart::{Motor, RotationSensor},
@@ -34,13 +35,11 @@ impl<S: Solenoid> Overclock<S> {
             _task: spawn(async move {
                 loop {
                     let voltage = match rotation_sensor.position() {
-                        Ok(position) => {
-                            flipper_feedback.update(
-                                target.borrow().as_degrees(),
-                                position.as_degrees(),
-                                Motor::UPDATE_INTERVAL,
-                            )
-                        }
+                        Ok(position) => flipper_feedback.update(
+                            target.borrow().as_degrees(),
+                            position.as_degrees(),
+                            Motor::UPDATE_INTERVAL,
+                        ),
                         Err(err) => {
                             log::warn!("{err}");
                             0.0
