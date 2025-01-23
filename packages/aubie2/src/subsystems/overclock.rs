@@ -5,10 +5,7 @@ use core::{cell::RefCell, time::Duration};
 
 use evian::control::ControlLoop;
 use vexide::{
-    devices::{
-        smart::{Motor, RotationSensor},
-        PortError,
-    },
+    devices::smart::{Motor, RotationSensor},
     prelude::{sleep, spawn, Position, SmartDevice, Task},
 };
 
@@ -26,7 +23,7 @@ impl<S: Solenoid, F: ControlLoop<Input = f64, Output = f64> + 'static> Overclock
         lift: S,
         mut flipper: Motor,
         rotation_sensor: RotationSensor,
-        mut flipper_feedback: F,
+        flipper_feedback: F,
     ) -> Self {
         let target = Rc::new(RefCell::new(Position::from_degrees(70.0)));
         let flipper_feedback = Rc::new(RefCell::new(flipper_feedback));

@@ -15,14 +15,14 @@ use vexide::prelude::*;
 
 use crate::{Robot, LADY_BROWN_LOWERED, LADY_BROWN_RAISED, LADY_BROWN_SCORED};
 
-mod blue_positive_right;
 mod blue_carter_special;
+mod blue_positive_right;
 mod red_positive_right;
 mod skills;
 mod testing;
 
-pub use blue_positive_right::blue_positive_right;
 pub use blue_carter_special::blue_carter_special;
+pub use blue_positive_right::blue_positive_right;
 pub use red_positive_right::red_positive_right;
 pub use skills::skills;
 pub use testing::testing;

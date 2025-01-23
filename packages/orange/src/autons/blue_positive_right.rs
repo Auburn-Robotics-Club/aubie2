@@ -98,12 +98,12 @@ pub async fn blue_positive_right(bot: &mut Robot) -> Result<(), Box<dyn Error>> 
         .linear_controller
         .set_output_limit(Some(Motor::V5_MAX_VOLTAGE * 1.0));
 
-        basic.turn_to_heading(dt, 45.0.deg()).await;
-        _ = bot.clamp.set_low();
-        basic.drive_distance(dt, -20.0).await;
-        basic.drive_distance_at_heading(dt, 59.0, 45.0.deg()).await;
-        bot.lady_brown
-            .set_target(LadyBrownTarget::Position(LADY_BROWN_SCORED));
+    basic.turn_to_heading(dt, 45.0.deg()).await;
+    _ = bot.clamp.set_low();
+    basic.drive_distance(dt, -20.0).await;
+    basic.drive_distance_at_heading(dt, 59.0, 45.0.deg()).await;
+    bot.lady_brown
+        .set_target(LadyBrownTarget::Position(LADY_BROWN_SCORED));
 
     Ok(())
 }

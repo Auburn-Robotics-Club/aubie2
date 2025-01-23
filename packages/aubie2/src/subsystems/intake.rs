@@ -110,13 +110,12 @@ impl Intake {
                         for motor in top_motors.iter_mut() {
                             _ = motor.set_voltage(top_voltage);
                         }
-
                     }
-                    
+
                     for motor in bottom_motors.iter_mut() {
                         _ = motor.set_voltage(bottom_voltage);
                     }
-                    
+
                     sleep(OpticalSensor::UPDATE_INTERVAL).await;
                 }
             }),

@@ -44,7 +44,7 @@ pub struct SwitchBoard {
 
 impl SwitchBoard {
     pub fn new(port: SmartPort) -> Self {
-        let mut serial = SerialPort::open(port, 9600);
+        let serial = SerialPort::open(port, 9600);
 
         let shared_state = Rc::new(RefCell::new(SwitchBoardState { serial, state: 0 }));
 

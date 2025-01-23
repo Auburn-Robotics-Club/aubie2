@@ -1,13 +1,8 @@
 use alloc::boxed::Box;
-use core::{
-    error::Error,
-    f64::{consts::PI, MAX},
-    time::Duration,
-};
+use core::{error::Error, f64::consts::PI, time::Duration};
 
 use aubie2::subsystems::{intake::RejectColor, lady_brown::LadyBrownTarget};
 use evian::{
-    control::{AngularPid, Pid, Tolerances},
     differential::motion::{BasicMotion, Seeking},
     prelude::*,
 };

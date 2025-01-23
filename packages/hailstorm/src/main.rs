@@ -7,12 +7,7 @@ pub mod autons;
 
 use core::time::Duration;
 
-use aubie2::{
-    hardware::{Solenoid, SolenoidSwitch, SwitchBoard},
-    logger::SerialLogger,
-    subsystems::overclock::Overclock,
-    theme::THEME_WAR_EAGLE,
-};
+use aubie2::{logger::SerialLogger, subsystems::overclock::Overclock, theme::THEME_WAR_EAGLE};
 use evian::{control::Pid, prelude::*};
 use log::{error, info, LevelFilter};
 use vexide::{core::time::Instant, prelude::*};
