@@ -39,7 +39,7 @@ impl Compete for Robot {
     async fn autonomous(&mut self) {
         let start = Instant::now();
 
-        match autons::blue_carter_special(self).await {
+        match autons::red_positive_right(self).await {
             Ok(()) => {
                 info!("Route completed successfully in {:?}.", start.elapsed());
             }
@@ -186,15 +186,15 @@ async fn main(peripherals: Peripherals) {
 
         // Intake
         intake: Intake::new(
-            [
-                Motor::new(peripherals.port_13, Gearset::Blue, Direction::Reverse),
-                Motor::new(peripherals.port_6, Gearset::Blue, Direction::Forward),
-            ],
             [Motor::new(
-                peripherals.port_19,
+                peripherals.port_13,
                 Gearset::Blue,
                 Direction::Reverse,
             )],
+            [
+                Motor::new(peripherals.port_6, Gearset::Blue, Direction::Forward),
+                Motor::new(peripherals.port_19, Gearset::Blue, Direction::Reverse),
+            ],
             OpticalSensor::new(peripherals.port_21),
             None,
         ),

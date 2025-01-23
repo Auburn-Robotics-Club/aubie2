@@ -34,32 +34,28 @@ pub async fn blue_carter_special(bot: &mut Robot) -> Result<(), Box<dyn Error>> 
     };
 
     // Goal rush
+    bot.intake.set_bottom_voltage(4.0);
     _ = bot.grabber.extend();
-    basic.linear_controller.set_kp(2.0);
-    basic.linear_tolerances.tolerance_duration = Some(Duration::from_millis(0));
-    basic.drive_distance_at_heading(dt, 34.0, 146.0.deg()).await;
+    seeking.tolerances.tolerance_duration = Some(Duration::from_millis(0));
+    seeking.move_to_point(dt, (25.0, 43.0)).await;
     sleep(Duration::from_millis(10)).await;
-    // _ = bot.grabber.pinch();
-    basic.linear_controller.set_kp(1.0);
-    basic.linear_tolerances.tolerance_duration = Some(Duration::from_millis(15));
+    _ = bot.grabber.pinch();
+    seeking.tolerances.tolerance_duration = Some(Duration::from_millis(15));
 
-    return Ok(());
-    
-    // Drag goal back and release from grabber
-    basic.drive_distance(dt, -15.0).await;
+    // Drag back and release
+    basic.drive_distance(dt, -21.0).await;
     _ = bot.grabber.release();
     sleep(Duration::from_millis(250)).await;
     basic.drive_distance(dt, -10.0).await;
     _ = bot.grabber.retract();
     sleep(Duration::from_millis(250)).await;
 
-    // Grab goal with clamp
-    basic.turn_to_heading(dt, 315.0.deg()).await;
+    basic.turn_to_heading(dt, 215.0.deg()).await;
 
     basic
         .linear_controller
         .set_output_limit(Some(Motor::V5_MAX_VOLTAGE * 0.35));
-    basic.drive_distance(dt, -19.0).await;
+    basic.drive_distance(dt, -20.0).await;
     basic
         .linear_controller
         .set_output_limit(Some(Motor::V5_MAX_VOLTAGE));
@@ -67,22 +63,21 @@ pub async fn blue_carter_special(bot: &mut Robot) -> Result<(), Box<dyn Error>> 
     sleep(Duration::from_millis(250)).await;
     _ = bot.clamp.set_high();
 
-    basic.drive_distance(dt, 16.0).await;
+    // ring stack
     basic.turn_to_heading(dt, 190.0.deg()).await;
-
+    basic.drive_distance(dt, 12.0).await;
     bot.intake.set_bottom_voltage(Motor::V5_MAX_VOLTAGE);
     bot.intake.set_top_voltage(Motor::V5_MAX_VOLTAGE * 0.9);
-
     basic
         .linear_controller
         .set_output_limit(Some(Motor::V5_MAX_VOLTAGE * 0.3));
-    basic.drive_distance(dt, 29.0).await;
+    basic.drive_distance(dt, 23.0).await;
     sleep(Duration::from_millis(350)).await;
     basic.turn_to_heading(dt, 264.0.deg()).await;
-    basic.drive_distance(dt, 31.0).await;
+    basic.drive_distance(dt, 29.0).await;
 
     basic.turn_to_heading(dt, 225.0.deg()).await;
-    basic.drive_distance(dt, 16.0).await;
+    basic.drive_distance(dt, 18.0).await;
 
     basic
         .linear_controller
@@ -100,12 +95,12 @@ pub async fn blue_carter_special(bot: &mut Robot) -> Result<(), Box<dyn Error>> 
         .linear_controller
         .set_output_limit(Some(Motor::V5_MAX_VOLTAGE * 1.0));
 
-        basic.turn_to_heading(dt, 45.0.deg()).await;
-        _ = bot.clamp.set_low();
-        basic.drive_distance(dt, -20.0).await;
-        basic.drive_distance_at_heading(dt, 59.0, 45.0.deg()).await;
-        bot.lady_brown
-            .set_target(LadyBrownTarget::Position(LADY_BROWN_SCORED));
+    basic.turn_to_heading(dt, 45.0.deg()).await;
+    _ = bot.clamp.set_low();
+    basic.drive_distance(dt, -20.0).await;
+    basic.drive_distance_at_heading(dt, 56.0, 43.0.deg()).await;
+    bot.lady_brown
+        .set_target(LadyBrownTarget::Position(LADY_BROWN_SCORED));
 
     Ok(())
 }

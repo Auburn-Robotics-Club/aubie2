@@ -14,28 +14,31 @@ use vexide::{
 
 use crate::hardware::Solenoid;
 
-pub struct Overclock<S: Solenoid> {
+pub struct Overclock<S: Solenoid, F: ControlLoop<Input = f64, Output = f64> + 'static> {
     lift: S,
+    flipper_feedback: Rc<RefCell<F>>,
     target: Rc<RefCell<Position>>,
     _task: Task<()>,
 }
 
-impl<S: Solenoid> Overclock<S> {
-    pub fn new<F: ControlLoop<Input = f64, Output = f64> + 'static>(
+impl<S: Solenoid, F: ControlLoop<Input = f64, Output = f64> + 'static> Overclock<S, F> {
+    pub fn new(
         lift: S,
         mut flipper: Motor,
         rotation_sensor: RotationSensor,
         mut flipper_feedback: F,
     ) -> Self {
         let target = Rc::new(RefCell::new(Position::from_degrees(70.0)));
+        let flipper_feedback = Rc::new(RefCell::new(flipper_feedback));
 
         Overclock {
             lift,
             target: target.clone(),
+            flipper_feedback: flipper_feedback.clone(),
             _task: spawn(async move {
                 loop {
                     let voltage = match rotation_sensor.position() {
-                        Ok(position) => flipper_feedback.update(
+                        Ok(position) => flipper_feedback.borrow_mut().update(
                             target.borrow().as_degrees(),
                             position.as_degrees(),
                             Motor::UPDATE_INTERVAL,
@@ -72,6 +75,10 @@ impl<S: Solenoid> Overclock<S> {
 
     pub fn set_target(&mut self, target: Position) {
         *self.target.borrow_mut() = target;
+    }
+
+    pub fn feedback(&self) -> Rc<RefCell<F>> {
+        self.flipper_feedback.clone()
     }
 
     pub fn target(&self) -> Position {

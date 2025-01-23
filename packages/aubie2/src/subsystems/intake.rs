@@ -111,11 +111,12 @@ impl Intake {
                             _ = motor.set_voltage(top_voltage);
                         }
 
-                        for motor in bottom_motors.iter_mut() {
-                            _ = motor.set_voltage(bottom_voltage);
-                        }
                     }
-
+                    
+                    for motor in bottom_motors.iter_mut() {
+                        _ = motor.set_voltage(bottom_voltage);
+                    }
+                    
                     sleep(OpticalSensor::UPDATE_INTERVAL).await;
                 }
             }),
@@ -128,11 +129,11 @@ impl Intake {
     }
 
     pub fn set_top_voltage(&mut self, voltage: f64) {
-        self.bottom_voltage.store(voltage as i32, Ordering::Release);
+        self.top_voltage.store(voltage as i32, Ordering::Release);
     }
 
     pub fn set_bottom_voltage(&mut self, voltage: f64) {
-        self.top_voltage.store(voltage as i32, Ordering::Release);
+        self.bottom_voltage.store(voltage as i32, Ordering::Release);
     }
 
     pub fn set_reject_color(&mut self, reject_color: Option<RejectColor>) {

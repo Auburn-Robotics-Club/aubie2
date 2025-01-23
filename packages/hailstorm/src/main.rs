@@ -3,6 +3,8 @@
 
 extern crate alloc;
 
+pub mod autons;
+
 use core::time::Duration;
 
 use aubie2::{
@@ -13,7 +15,7 @@ use aubie2::{
 };
 use evian::{control::Pid, prelude::*};
 use log::{error, info, LevelFilter};
-use vexide::prelude::*;
+use vexide::{core::time::Instant, prelude::*};
 
 static LOGGER: SerialLogger = SerialLogger;
 
@@ -23,11 +25,36 @@ pub struct Robot {
     clamp: AdiDigitalOut,
     doinker: AdiDigitalOut,
     #[allow(unused)]
-    lift: Overclock<AdiDigitalOut>,
+    lift: Overclock<AdiDigitalOut, Pid>,
     intake: [Motor; 2],
 }
 
 impl Compete for Robot {
+    async fn autonomous(&mut self) {
+        let start = Instant::now();
+
+        match autons::red_left(self).await {
+            Ok(()) => {
+                info!("Route completed successfully in {:?}.", start.elapsed());
+            }
+            Err(err) => {
+                error!(
+                    "Route encountered error after {:?}: {}",
+                    start.elapsed(),
+                    err
+                );
+            }
+        }
+
+        // Dump tracking info to get ending pose of robot.
+        info!(
+            "Position: {}\nHeading: {}° ({}rad)",
+            self.drivetrain.tracking.position(),
+            self.drivetrain.tracking.heading().as_degrees(),
+            self.drivetrain.tracking.heading().as_radians()
+        );
+    }
+
     async fn driver(&mut self) {
         loop {
             let state = self.controller.state().unwrap_or_default();
@@ -89,7 +116,7 @@ async fn main(peripherals: Peripherals) {
     LOGGER.init(LevelFilter::Trace).unwrap();
 
     info!("Calibrating IMU");
-    let mut imu = InertialSensor::new(peripherals.port_11);
+    let mut imu = InertialSensor::new(peripherals.port_21);
 
     if let Err(err) = imu.calibrate().await {
         error!("IMU Calibration failed: {err}. Retrying...");
