@@ -2,10 +2,12 @@ use core::{f64::consts::PI, time::Duration};
 
 use evian::control::{AngularPid, Pid, Tolerances};
 
-mod red_left;
+mod red;
+mod blue;
 mod testing;
 
-pub use red_left::red_left;
+pub use red::red;
+pub use blue::blue;
 pub use testing::testing;
 
 const LINEAR_PID: Pid = Pid::new(1.0, 0.0, 0.125, None);

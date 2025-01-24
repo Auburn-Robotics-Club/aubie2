@@ -28,7 +28,7 @@ impl Compete for Robot {
     async fn autonomous(&mut self) {
         let start = Instant::now();
 
-        match autons::red_left(self).await {
+        match autons::blue(self).await {
             Ok(()) => {
                 info!("Route completed successfully in {:?}.", start.elapsed());
             }

@@ -10,7 +10,6 @@ use core::time::Duration;
 use aubie2::{
     logger::SerialLogger,
     subsystems::{
-        intake::RejectColor,
         lady_brown::{LadyBrown, LadyBrownTarget},
         Grabber, Intake,
     },
@@ -39,7 +38,7 @@ impl Compete for Robot {
     async fn autonomous(&mut self) {
         let start = Instant::now();
 
-        match autons::red_positive_right(self).await {
+        match autons::blue_positive_right(self).await {
             Ok(()) => {
                 info!("Route completed successfully in {:?}.", start.elapsed());
             }
