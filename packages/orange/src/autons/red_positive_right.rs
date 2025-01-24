@@ -65,7 +65,7 @@ pub async fn red_positive_right(bot: &mut Robot) -> Result<(), Box<dyn Error>> {
         .linear_controller
         .set_output_limit(Some(Motor::V5_MAX_VOLTAGE * 0.35));
     basic
-        .drive_distance_at_heading(dt, -27.0, 265.0.deg())
+        .drive_distance_at_heading(dt, -28.0, 265.0.deg())
         .await;
     basic
         .linear_controller
@@ -91,15 +91,12 @@ pub async fn red_positive_right(bot: &mut Robot) -> Result<(), Box<dyn Error>> {
     basic
         .linear_controller
         .set_output_limit(Some(Motor::V5_MAX_VOLTAGE * 0.5));
-    basic.drive_distance(dt, 31.0).await;
+    basic.drive_distance_at_heading(dt, 30.0, 277.0.deg()).await;
     basic.turn_to_heading(dt, 322.0.deg()).await;
     basic
         .linear_controller
-        .set_output_limit(Some(Motor::V5_MAX_VOLTAGE * 0.2));
+        .set_output_limit(Some(Motor::V5_MAX_VOLTAGE * 0.25));
     basic.drive_distance(dt, 19.0).await;
-    basic
-        .linear_controller
-        .set_output_limit(Some(Motor::V5_MAX_VOLTAGE * 0.4));
     basic.drive_distance(dt, -20.0).await;
     basic.drive_distance(dt, 20.0).await;
     basic.drive_distance(dt, -20.0).await;
