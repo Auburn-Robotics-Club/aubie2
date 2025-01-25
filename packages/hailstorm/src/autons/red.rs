@@ -66,26 +66,27 @@ pub async fn red(bot: &mut Robot) -> Result<(), Box<dyn Error>> {
     sleep(Duration::from_millis(250)).await;
 
     // Score first ring
-    bot.lift.set_target(Position::from_degrees(300.0));
-    sleep(Duration::from_millis(800)).await;
-    bot.lift.set_target(Position::from_degrees(70.0));
+    bot.lift.score().await;
 
     // Intake stack
-    basic.turn_to_heading(dt, 243.0.deg()).await;
+    let stack_angle = 248.0.deg();
+    basic.turn_to_heading(dt, stack_angle).await;
     _ = bot.clamp.set_low();
     basic
         .linear_controller
         .set_output_limit(Some(Motor::V5_MAX_VOLTAGE * 0.35));
-    basic.drive_distance(dt, 23.0).await;
+    basic.drive_distance_at_heading(dt, 24.0, stack_angle).await;
+    println!("{}", dt.tracking.position());
     sleep(Duration::from_millis(1250)).await;
 
     // Get second goal
-    basic.turn_to_heading(dt, 183.0.deg()).await;
+    let second_goal_angle = 182.0.deg();
+    basic.turn_to_heading(dt, second_goal_angle).await;
 
     basic
         .linear_controller
         .set_output_limit(Some(Motor::V5_MAX_VOLTAGE * 0.4));
-    basic.drive_distance_at_heading(dt, -44.0, 181.0.deg()).await;
+    basic.drive_distance_at_heading(dt, -44.0, second_goal_angle).await;
     basic
         .linear_controller
         .set_output_limit(Some(Motor::V5_MAX_VOLTAGE));
@@ -93,52 +94,59 @@ pub async fn red(bot: &mut Robot) -> Result<(), Box<dyn Error>> {
     _ = bot.clamp.set_high();
     sleep(Duration::from_millis(250)).await;
 
-    bot.lift.set_target(Position::from_degrees(285.0));
-    sleep(Duration::from_millis(800)).await;
-    bot.lift.set_target(Position::from_degrees(70.0));
+    bot.lift.score_safe().await;
     sleep(Duration::from_millis(500)).await;
-
-    basic.drive_distance_at_heading(dt, -14.0, 180.0.deg()).await;
     _ = bot.clamp.set_low();
+    basic.drive_distance_at_heading(dt, -14.0, 180.0.deg()).await;
 
     // Score on alliance stake
-    basic.drive_distance_at_heading(dt, 13.5, 180.0.deg()).await;
+    let stake_sideways_dist = 14.25;
+    let stake_forward_dist = 18.0;
+    let stake_intake_dist = -8.0;
+    let stake_reverse_dist = -7.5;
 
+    basic.drive_distance_at_heading(dt, stake_sideways_dist, 180.0.deg()).await;
+
+    basic.angular_tolerances.error_tolerance = Some(f64::to_radians(2.0));
+    basic.angular_tolerances.timeout = Some(Duration::from_secs(3));
+    basic.angular_controller.set_output_limit(Some(8.0));
     basic.turn_to_heading(dt, 270.0.deg()).await;
+    basic.angular_tolerances.error_tolerance = Some(f64::to_radians(8.0));
+    basic.angular_tolerances.timeout = Some(Duration::from_secs(10));
+    basic.angular_controller.set_output_limit(None);
 
     basic
         .linear_controller
         .set_output_limit(Some(Motor::V5_MAX_VOLTAGE * 0.15));
-    basic.drive_distance_at_heading(dt, 17.5, 270.0.deg()).await;
+    basic.drive_distance_at_heading(dt, stake_forward_dist, 270.0.deg()).await;
     basic
-        .linear_controller
-        .set_output_limit(Some(Motor::V5_MAX_VOLTAGE));
+    .linear_controller
+    .set_output_limit(Some(Motor::V5_MAX_VOLTAGE));
+    basic.drive_distance_at_heading(dt, stake_intake_dist, 270.0.deg()).await;
 
-    basic.drive_distance_at_heading(dt, -8.0, 270.0.deg()).await;
-
+    basic.angular_tolerances.error_tolerance = Some(f64::to_radians(2.0));
+    basic.angular_tolerances.timeout = Some(Duration::from_secs(3));
+    basic.angular_controller.set_output_limit(Some(7.0));
     basic.turn_to_heading(dt, 90.0.deg()).await;
+    basic.angular_tolerances.error_tolerance = Some(f64::to_radians(8.0));
+    basic.angular_tolerances.timeout = Some(Duration::from_secs(10));
+    basic.angular_controller.set_output_limit(None);
+
     sleep(Duration::from_millis(250)).await;
-    basic.drive_distance_at_heading(dt, -7.5, 90.0.deg()).await;
+    basic.drive_distance_at_heading(dt, stake_reverse_dist, 90.0.deg()).await;
     sleep(Duration::from_millis(250)).await;
 
-    bot.lift.set_target(Position::from_degrees(285.0));
-    sleep(Duration::from_secs(1)).await;
-    bot.lift.set_target(Position::from_degrees(70.0));
+    bot.lift.score_safe().await;
     sleep(Duration::from_millis(500)).await;
 
     for motor in bot.intake.iter_mut() {
         _ = motor.set_voltage(0.0);
     }
 
-    seeking.move_to_point(dt, (0.0, 13.0)).await;
-    basic.turn_to_heading(dt, 225.0.deg()).await;
-    
-    _ = bot.lift.raise();
-    sleep(Duration::from_millis(800)).await;
-    bot.lift.set_target(Position::from_degrees(310.0));
-
-    basic.drive_distance(dt, -7.0).await;
-    _ = bot.lift.lower();
+    basic
+    .linear_controller
+    .set_output_limit(Some(Motor::V5_MAX_VOLTAGE * 0.5));
+    basic.drive_distance(dt, 34.0).await;
 
     Ok(())
 }

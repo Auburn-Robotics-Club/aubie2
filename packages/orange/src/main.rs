@@ -38,7 +38,7 @@ impl Compete for Robot {
     async fn autonomous(&mut self) {
         let start = Instant::now();
 
-        match autons::blue_positive_right(self).await {
+        match autons::blue_carter_special(self).await {
             Ok(()) => {
                 info!("Route completed successfully in {:?}.", start.elapsed());
             }
@@ -80,8 +80,7 @@ impl Compete for Robot {
                 self.lady_brown.set_target(match self.lady_brown.target() {
                     LadyBrownTarget::Position(state) => match state {
                         LADY_BROWN_LOWERED => LadyBrownTarget::Position(LADY_BROWN_RAISED),
-                        LADY_BROWN_RAISED => LadyBrownTarget::Position(LADY_BROWN_LOWERED),
-                        _ => unreachable!(),
+                        _ => LadyBrownTarget::Position(LADY_BROWN_LOWERED),
                     },
                     LadyBrownTarget::Manual(_) => LadyBrownTarget::Position(LADY_BROWN_RAISED),
                 });

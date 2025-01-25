@@ -28,7 +28,7 @@ impl Compete for Robot {
     async fn autonomous(&mut self) {
         let start = Instant::now();
 
-        match autons::blue(self).await {
+        match autons::red(self).await {
             Ok(()) => {
                 info!("Route completed successfully in {:?}.", start.elapsed());
             }
@@ -51,6 +51,8 @@ impl Compete for Robot {
     }
 
     async fn driver(&mut self) {
+        let mut correction_macro_timestamp: Option<Instant> = None;
+
         loop {
             let state = self.controller.state().unwrap_or_default();
 
@@ -101,6 +103,16 @@ impl Compete for Robot {
                 _ = self.lift.lower();
             }
 
+            if state.button_r2.is_now_pressed() && correction_macro_timestamp.is_none() {
+                correction_macro_timestamp = Some(Instant::now());
+                self.lift.set_target(Position::from_degrees(130.0));
+            } else if let Some(timestamp) = correction_macro_timestamp {
+                if timestamp.elapsed() > Duration::from_millis(800) {
+                    self.lift.set_target(Position::from_degrees(70.0));
+                    correction_macro_timestamp = None;
+                }
+            }
+
             sleep(Motor::UPDATE_INTERVAL).await;
         }
     }
@@ -110,7 +122,6 @@ impl Compete for Robot {
 async fn main(peripherals: Peripherals) {
     LOGGER.init(LevelFilter::Trace).unwrap();
 
-    info!("Calibrating IMU");
     let mut imu = InertialSensor::new(peripherals.port_21);
 
     if let Err(err) = imu.calibrate().await {
@@ -120,7 +131,6 @@ async fn main(peripherals: Peripherals) {
             sleep(Duration::from_secs(3)).await;
         }
     }
-
     info!("Calibration complete.");
 
     let robot = Robot {

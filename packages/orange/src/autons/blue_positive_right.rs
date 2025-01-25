@@ -74,10 +74,11 @@ pub async fn blue_positive_right(bot: &mut Robot) -> Result<(), Box<dyn Error>> 
     basic
         .linear_controller
         .set_output_limit(Some(Motor::V5_MAX_VOLTAGE * 0.3));
-    basic.drive_distance(dt, 29.0).await;
+    basic.drive_distance(dt, 30.0).await;
     sleep(Duration::from_millis(350)).await;
     basic.turn_to_heading(dt, 264.0.deg()).await;
-    basic.drive_distance(dt, 31.0).await;
+    basic.drive_distance(dt, 30.0).await;
+    basic.drive_distance(dt, -6.75).await;
 
     basic.turn_to_heading(dt, 225.0.deg()).await;
     basic.drive_distance(dt, 16.0).await;

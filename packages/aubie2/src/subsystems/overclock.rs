@@ -85,4 +85,20 @@ impl<S: Solenoid, F: ControlLoop<Input = f64, Output = f64> + 'static> Overclock
     pub fn is_raised(&self) -> Result<bool, S::Error> {
         self.lift.is_high()
     }
+
+    /// Score ring
+    pub async fn score(&mut self) {
+        self.set_target(Position::from_degrees(285.0));
+        sleep(Duration::from_millis(800)).await;
+        self.set_target(Position::from_degrees(70.0));
+    }
+
+    /// Score ring with intermediate position to position rings correctly in auto.
+    pub async fn score_safe(&mut self) {
+        self.set_target(Position::from_degrees(130.0));
+        sleep(Duration::from_millis(1000)).await;
+        self.set_target(Position::from_degrees(285.0));
+        sleep(Duration::from_millis(800)).await;
+        self.set_target(Position::from_degrees(70.0));
+    }
 }

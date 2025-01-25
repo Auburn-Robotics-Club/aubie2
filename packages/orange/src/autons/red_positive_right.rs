@@ -103,8 +103,6 @@ pub async fn red_positive_right(bot: &mut Robot) -> Result<(), Box<dyn Error>> {
     basic.drive_distance(dt, 20.0).await;
     basic.drive_distance(dt, -20.0).await;
     basic.drive_distance(dt, 20.0).await;
-    basic.drive_distance(dt, -20.0).await;
-    basic.drive_distance(dt, 20.0).await;
     basic.drive_distance(dt, -16.0).await;
     basic
         .linear_controller

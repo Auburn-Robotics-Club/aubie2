@@ -14,7 +14,7 @@ use evian::{
 use vexide::prelude::*;
 
 use super::{ANGULAR_PID, ANGULAR_TOLERANCES, LINEAR_PID, LINEAR_TOLERANCES};
-use crate::{Robot, LADY_BROWN_LOWERED, LADY_BROWN_RAISED, LADY_BROWN_SCORED};
+use crate::{Robot, LADY_BROWN_SCORED};
 
 pub async fn blue_carter_special(bot: &mut Robot) -> Result<(), Box<dyn Error>> {
     let dt = &mut bot.drivetrain;
@@ -37,7 +37,7 @@ pub async fn blue_carter_special(bot: &mut Robot) -> Result<(), Box<dyn Error>> 
     bot.intake.set_bottom_voltage(4.0);
     _ = bot.grabber.extend();
     seeking.tolerances.tolerance_duration = Some(Duration::from_millis(0));
-    seeking.move_to_point(dt, (25.0, 43.0)).await;
+    seeking.move_to_point(dt, (26.0, 45.0)).await;
     sleep(Duration::from_millis(10)).await;
     _ = bot.grabber.pinch();
     seeking.tolerances.tolerance_duration = Some(Duration::from_millis(15));
@@ -50,7 +50,7 @@ pub async fn blue_carter_special(bot: &mut Robot) -> Result<(), Box<dyn Error>> 
     _ = bot.grabber.retract();
     sleep(Duration::from_millis(250)).await;
 
-    basic.turn_to_heading(dt, 215.0.deg()).await;
+    basic.turn_to_heading(dt, 208.0.deg()).await;
 
     basic
         .linear_controller
