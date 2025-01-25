@@ -3,7 +3,7 @@ members = ["packages/*"]
 resolver = "2"
 
 [workspace.dependencies]
-vexide = { path = "../vexide/packages/vexide" }
-evian = { path = "../evian" }
+vexide = { git = "https://github.com/vexide/vexide.git" }
+evian = { git = "https://github.com/vexide/evian.git" }
 aubie2 = { path = "packages/aubie2" }
 log = "0.4.22"
