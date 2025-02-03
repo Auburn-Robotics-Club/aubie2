@@ -22,8 +22,8 @@ pub async fn red_positive_right(bot: &mut Robot) -> Result<(), Box<dyn Error>> {
     dt.tracking.set_heading(90.0.deg());
 
     let mut seeking = Seeking {
-        distance_controller: LINEAR_PID,
-        angle_controller: ANGULAR_PID,
+        linear_controller: LINEAR_PID,
+        angular_controller: ANGULAR_PID,
         tolerances: LINEAR_TOLERANCES,
     };
     let mut basic = BasicMotion {
@@ -37,7 +37,7 @@ pub async fn red_positive_right(bot: &mut Robot) -> Result<(), Box<dyn Error>> {
     _ = bot.grabber.extend();
     basic.linear_controller.set_kp(2.0);
     basic.linear_tolerances.tolerance_duration = Some(Duration::from_millis(0));
-    basic.drive_distance_at_heading(dt, 37.5, 75.0.deg()).await;
+    basic.drive_distance_at_heading(dt, 38.0, 75.0.deg()).await;
     sleep(Duration::from_millis(60)).await;
     _ = bot.grabber.pinch();
     sleep(Duration::from_millis(25)).await;

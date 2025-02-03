@@ -27,6 +27,7 @@ impl LadyBrown {
         mut motors: [Motor; COUNT],
         rotation_sensor: RotationSensor,
         mut feedback: F,
+        max_position: Position,
     ) -> Self {
         let target = Rc::new(RefCell::new(LadyBrownTarget::Manual(
             MotorControl::Voltage(0.0),
@@ -35,23 +36,35 @@ impl LadyBrown {
             target: target.clone(),
             _task: spawn(async move {
                 loop {
-                    let motor_target = match *target.borrow() {
-                        LadyBrownTarget::Position(state) => match rotation_sensor.position() {
-                            Ok(position) => MotorControl::Voltage(feedback.update(
-                                state.as_degrees(),
-                                position.as_degrees(),
-                                Motor::UPDATE_INTERVAL,
-                            )),
-                            Err(err) => {
-                                warn!("{err}");
-                                MotorControl::Voltage(0.0)
+                    match rotation_sensor.position() {
+                        Ok(position) => {
+                            if position < max_position {
+                                let current_target = *target.borrow();
+                                if let LadyBrownTarget::Manual(MotorControl::Voltage(v)) = current_target {
+                                    if v.is_sign_positive() {
+                                        *target.borrow_mut() = LadyBrownTarget::Position(max_position);
+                                    }
+                                }
                             }
-                        },
-                        LadyBrownTarget::Manual(v) => v,
-                    };
 
-                    for motor in motors.iter_mut() {
-                        _ = motor.set_target(motor_target);
+                            let motor_target = match *target.borrow() {
+                                LadyBrownTarget::Position(state) => {
+                                    MotorControl::Voltage(feedback.update(
+                                        state.as_degrees(),
+                                        position.as_degrees(),
+                                        Motor::UPDATE_INTERVAL,
+                                    ))
+                                }
+                                LadyBrownTarget::Manual(v) => v,
+                            };
+
+                            for motor in motors.iter_mut() {
+                                _ = motor.set_target(motor_target);
+                            }
+                        }
+                        Err(err) => {
+                            warn!("{err}");
+                        }
                     }
 
                     sleep(Duration::from_millis(5)).await;

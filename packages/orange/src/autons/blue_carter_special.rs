@@ -22,8 +22,8 @@ pub async fn blue_carter_special(bot: &mut Robot) -> Result<(), Box<dyn Error>> 
     dt.tracking.set_heading(90.0.deg());
 
     let mut seeking = Seeking {
-        distance_controller: LINEAR_PID,
-        angle_controller: ANGULAR_PID,
+        linear_controller: LINEAR_PID,
+        angular_controller: ANGULAR_PID,
         tolerances: LINEAR_TOLERANCES,
     };
     let mut basic = BasicMotion {

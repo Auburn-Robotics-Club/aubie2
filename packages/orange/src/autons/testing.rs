@@ -19,8 +19,8 @@ use crate::{Robot, LADY_BROWN_LOWERED, LADY_BROWN_RAISED, LADY_BROWN_SCORED};
 pub async fn testing(bot: &mut Robot) -> Result<(), Box<dyn Error>> {
     let dt = &mut bot.drivetrain;
     let mut seeking = Seeking {
-        distance_controller: LINEAR_PID,
-        angle_controller: ANGULAR_PID,
+        linear_controller: LINEAR_PID,
+        angular_controller: ANGULAR_PID,
         tolerances: LINEAR_TOLERANCES,
     };
     let mut basic = BasicMotion {

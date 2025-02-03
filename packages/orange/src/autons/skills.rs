@@ -19,8 +19,8 @@ use crate::{Robot, LADY_BROWN_LOWERED, LADY_BROWN_RAISED, LADY_BROWN_SCORED};
 pub async fn skills(bot: &mut Robot) -> Result<(), Box<dyn Error>> {
     let dt = &mut bot.drivetrain;
     let mut seeking = Seeking {
-        distance_controller: LINEAR_PID,
-        angle_controller: ANGULAR_PID,
+        linear_controller: LINEAR_PID,
+        angular_controller: ANGULAR_PID,
         tolerances: LINEAR_TOLERANCES,
     };
     let mut basic = BasicMotion {
@@ -33,33 +33,46 @@ pub async fn skills(bot: &mut Robot) -> Result<(), Box<dyn Error>> {
     bot.intake.set_reject_color(Some(RejectColor::Blue));
 
     // Grab goal
-    seeking.move_to_point(dt, (16.0, 26.0)).await;
+
+    basic
+        .linear_controller
+        .set_output_limit(Some(Motor::V5_MAX_VOLTAGE * 0.35));
+    basic.drive_distance_at_heading(dt, -34.0, 245.0.deg()).await;
+    basic
+        .linear_controller
+        .set_output_limit(Some(Motor::V5_MAX_VOLTAGE));
     _ = bot.clamp.set_high();
 
     // Intake first red ring.
     bot.intake.set_voltage(12.0);
-    basic.turn_to_heading(dt, 80.0.deg()).await;
+    basic.turn_to_heading(dt, 78.0.deg()).await;
     basic.drive_distance(dt, 24.0).await;
     bot.intake.set_voltage(10.0);
     sleep(Duration::from_millis(500)).await;
 
     // Intake second red ring.
     basic.drive_distance(dt, -16.0).await;
-    basic.turn_to_heading(dt, 196.0.deg()).await;
+    basic.turn_to_heading(dt, 198.0.deg()).await;
     basic.drive_distance(dt, 22.0).await;
     sleep(Duration::from_millis(700)).await;
 
     // Intake third/fourth ring.
     basic.turn_to_heading(dt, 313.0.deg()).await;
 
-    seeking.move_to_point(dt, (36.0, -12.0)).await;
+    basic
+        .linear_controller
+        .set_output_limit(Some(Motor::V5_MAX_VOLTAGE * 0.4));
+    basic.drive_distance_at_heading(dt, 50.0, 313.0.deg()).await;
+    basic
+        .linear_controller
+        .set_output_limit(Some(Motor::V5_MAX_VOLTAGE));    
     sleep(Duration::from_millis(1500)).await;
 
     // turn around and score goal
     basic.drive_distance(dt, -18.0).await;
     basic.turn_to_heading(dt, 133.0.deg()).await;
-    basic.drive_distance(dt, -16.0).await;
     _ = bot.clamp.set_low();
+    basic.drive_distance(dt, -14.0).await;
     basic.drive_distance(dt, 16.0).await;
 
     // Rush for wallstake ring

@@ -5,10 +5,12 @@ use evian::control::{AngularPid, Pid, Tolerances};
 mod red;
 mod blue;
 mod testing;
+mod skills;
 
 pub use red::red;
 pub use blue::blue;
 pub use testing::testing;
+pub use skills::skills;
 
 const LINEAR_PID: Pid = Pid::new(1.0, 0.0, 0.125, None);
 const ANGULAR_PID: AngularPid = AngularPid::new(16.0, 0.0, 1.0, None);

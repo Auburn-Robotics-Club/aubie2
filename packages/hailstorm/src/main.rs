@@ -28,7 +28,7 @@ impl Compete for Robot {
     async fn autonomous(&mut self) {
         let start = Instant::now();
 
-        match autons::red(self).await {
+        match autons::skills(self).await {
             Ok(()) => {
                 info!("Route completed successfully in {:?}.", start.elapsed());
             }
@@ -68,7 +68,7 @@ impl Compete for Robot {
             // Intake control
             for motor in self.intake.iter_mut() {
                 if state.button_b.is_pressed() {
-                    _ = motor.set_voltage(Motor::V5_MAX_VOLTAGE * 0.9);
+                    _ = motor.set_voltage(Motor::V5_MAX_VOLTAGE * 1.0);
                 } else if state.button_down.is_pressed() {
                     _ = motor.set_voltage(-Motor::V5_MAX_VOLTAGE * 1.0);
                 } else {
@@ -108,7 +108,7 @@ impl Compete for Robot {
                 self.lift.set_target(Position::from_degrees(130.0));
             } else if let Some(timestamp) = correction_macro_timestamp {
                 if timestamp.elapsed() > Duration::from_millis(800) {
-                    self.lift.set_target(Position::from_degrees(70.0));
+                    self.lift.set_target(Position::from_degrees(290.0));
                     correction_macro_timestamp = None;
                 }
             }

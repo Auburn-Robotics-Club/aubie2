@@ -15,8 +15,8 @@ pub async fn red(bot: &mut Robot) -> Result<(), Box<dyn Error>> {
     dt.tracking.set_heading(270.0.deg());
 
     let mut seeking = Seeking {
-        distance_controller: LINEAR_PID,
-        angle_controller: ANGULAR_PID,
+        linear_controller: LINEAR_PID,
+        angular_controller: ANGULAR_PID,
         tolerances: LINEAR_TOLERANCES,
     };
     let mut basic = BasicMotion {

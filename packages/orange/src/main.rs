@@ -38,7 +38,7 @@ impl Compete for Robot {
     async fn autonomous(&mut self) {
         let start = Instant::now();
 
-        match autons::blue_carter_special(self).await {
+        match autons::blue_positive_right(self).await {
             Ok(()) => {
                 info!("Route completed successfully in {:?}.", start.elapsed());
             }
@@ -204,7 +204,8 @@ async fn main(peripherals: Peripherals) {
                 Motor::new(peripherals.port_16, Gearset::Green, Direction::Reverse),
             ],
             RotationSensor::new(peripherals.port_18, Direction::Forward),
-            Pid::new(0.45, 0.0, 0.001, None),
+            Pid::new(0.3, 0.0, 0.003, None),
+            Position::from_degrees(170.0)
         ),
 
         // Mogo
