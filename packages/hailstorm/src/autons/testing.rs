@@ -1,18 +1,15 @@
 use alloc::boxed::Box;
-use core::error::Error;
+use vexide::prelude::sleep;
+use core::{error::Error, time::Duration};
 
-use evian::differential::motion::BasicMotion;
+use evian::{differential::motion::BasicMotion, math::IntoAngle, prelude::TracksHeading};
 
 use super::{ANGULAR_PID, ANGULAR_TOLERANCES, LINEAR_PID, LINEAR_TOLERANCES};
 use crate::Robot;
 
 pub async fn testing(bot: &mut Robot) -> Result<(), Box<dyn Error>> {
     let dt = &mut bot.drivetrain;
-    // let seeking = Seeking {
-    //     linear_controller: LINEAR_PID,
-    //     angular_controller: ANGULAR_PID,
-    //     tolerances: LINEAR_TOLERANCES,
-    // };
+
     let mut basic = BasicMotion {
         linear_controller: LINEAR_PID,
         angular_controller: ANGULAR_PID,
@@ -20,9 +17,16 @@ pub async fn testing(bot: &mut Robot) -> Result<(), Box<dyn Error>> {
         angular_tolerances: ANGULAR_TOLERANCES,
     };
 
-    basic.drive_distance(dt, 24.0).await;
-    basic.drive_distance(dt, -24.0).await;
-    basic.drive_distance(dt, 24.0).await;
+    dt.tracking.set_heading(90.0.deg());
+
+    log::debug!("{}", dt.tracking.heading().as_degrees());
+
+    basic.turn_to_heading(dt, 45.0.deg()).await;
+    dt.tracking.set_heading(90.0.deg());
+
+    sleep(Duration::from_millis(500)).await;
+
+    log::debug!("{}", dt.tracking.heading().as_degrees());
 
     Ok(())
 }

@@ -30,9 +30,5 @@ pub async fn testing(bot: &mut Robot) -> Result<(), Box<dyn Error>> {
         angular_tolerances: ANGULAR_TOLERANCES,
     };
 
-    basic.drive_distance(dt, 24.0).await;
-    basic.drive_distance(dt, -24.0).await;
-    basic.drive_distance(dt, 24.0).await;
-
     Ok(())
 }

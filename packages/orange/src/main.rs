@@ -31,6 +31,7 @@ pub struct Robot {
     intake: Intake,
     lady_brown: LadyBrown,
     clamp: AdiDigitalOut,
+    intake_raiser: AdiDigitalOut,
     grabber: Grabber<AdiDigitalOut, AdiDigitalOut>,
 }
 
@@ -135,17 +136,10 @@ impl Compete for Robot {
 async fn main(peripherals: Peripherals) {
     LOGGER.init(LevelFilter::Trace).unwrap();
 
-    println!("Hi");
     info!("Calibrating IMU");
     let mut imu = InertialSensor::new(peripherals.port_12);
 
-    if let Err(err) = imu.calibrate().await {
-        error!("IMU Calibration failed: {err}. Retrying...");
-        if let Err(err) = imu.calibrate().await {
-            error!("IMU Calibration failed again: {err}. Waiting 3 seconds...");
-            sleep(Duration::from_secs(3)).await;
-        }
-    }
+    imu.calibrate().await.unwrap();
 
     info!("Calibration complete.");
 
@@ -215,6 +209,8 @@ async fn main(peripherals: Peripherals) {
             AdiDigitalOut::new(peripherals.adi_g),
             AdiDigitalOut::new(peripherals.adi_a),
         ),
+
+        intake_raiser: AdiDigitalOut::new(peripherals.adi_e),
     };
 
     robot.compete().await;

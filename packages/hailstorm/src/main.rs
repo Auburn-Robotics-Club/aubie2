@@ -28,7 +28,7 @@ impl Compete for Robot {
     async fn autonomous(&mut self) {
         let start = Instant::now();
 
-        match autons::skills(self).await {
+        match autons::testing(self).await {
             Ok(()) => {
                 info!("Route completed successfully in {:?}.", start.elapsed());
             }
@@ -108,7 +108,7 @@ impl Compete for Robot {
                 self.lift.set_target(Position::from_degrees(130.0));
             } else if let Some(timestamp) = correction_macro_timestamp {
                 if timestamp.elapsed() > Duration::from_millis(800) {
-                    self.lift.set_target(Position::from_degrees(290.0));
+                    self.lift.set_target(Position::from_degrees(70.0));
                     correction_macro_timestamp = None;
                 }
             }

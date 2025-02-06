@@ -2,8 +2,7 @@ use alloc::boxed::Box;
 use core::{error::Error, f64::consts::PI, time::Duration};
 
 use evian::{
-    differential::motion::{BasicMotion, Seeking},
-    prelude::*,
+    differential::motion::{BasicMotion, Seeking}, drivetrain, prelude::*
 };
 use vexide::prelude::*;
 
@@ -71,15 +70,34 @@ pub async fn blue(bot: &mut Robot) -> Result<(), Box<dyn Error>> {
     // Intake stack
     let stack_angle = 260.0.deg();
     basic.turn_to_heading(dt, stack_angle).await;
-    _ = bot.clamp.set_low();
     basic
         .linear_controller
         .set_output_limit(Some(Motor::V5_MAX_VOLTAGE * 0.35));
-    basic.drive_distance_at_heading(dt, 19.5, stack_angle).await;
+    basic.drive_distance_at_heading(dt, 21.0, stack_angle).await;
     sleep(Duration::from_millis(1250)).await;
 
-    basic.drive_distance(dt, -5.0).await;
     basic.turn_to_heading(dt, 0.0.deg()).await;
+    _ = bot.clamp.set_low();
+
+    // Odom reset
+    for motor in bot.intake.iter_mut() {
+        _ = motor.set_voltage(0.0);
+    }
+    
+    basic.linear_tolerances.timeout = Some(Duration::from_millis(1500));
+    basic.angular_tolerances.timeout = Some(Duration::from_millis(1500));
+    basic.drive_distance(dt, 22.0).await;
+    basic.linear_tolerances.timeout = Some(Duration::from_secs(10));
+    basic.angular_tolerances.timeout = Some(Duration::from_secs(10));
+
+    dt.tracking.set_heading(0.0.deg());
+    sleep(Duration::from_millis(250)).await;
+    log::debug!("Heading is {}", dt.tracking.heading().as_degrees());
+    basic.drive_distance(dt, -8.0).await;
+
+    basic.turn_to_heading(dt, 135.0.deg()).await;
+
+    return Ok(());
 
     // Get second goal
     basic

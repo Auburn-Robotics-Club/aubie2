@@ -38,57 +38,65 @@ pub async fn blue_positive_right(bot: &mut Robot) -> Result<(), Box<dyn Error>> 
     basic.linear_tolerances.tolerance_duration = Some(Duration::from_millis(0));
     basic.drive_distance_at_heading(dt, 36.0, 144.0.deg()).await;
     _ = bot.grabber.pinch();
+    basic.drive_distance(dt, -1.0).await;
     sleep(Duration::from_millis(15)).await;
     basic.linear_controller.set_kp(1.0);
     basic.linear_tolerances.tolerance_duration = Some(Duration::from_millis(15));
 
     // Drag goal back and release from grabber
-    basic.drive_distance(dt, -15.0).await;
+    basic.angular_controller.set_output_limit(Some(Motor::V5_MAX_VOLTAGE * 0.7));
+    basic.drive_distance_at_heading(dt, -20.0, 128.0.deg()).await;
+    basic.angular_controller.set_output_limit(None);
     _ = bot.grabber.release();
     sleep(Duration::from_millis(250)).await;
-    basic.drive_distance(dt, -10.0).await;
+    basic.drive_distance(dt, -4.0).await;
     _ = bot.grabber.retract();
     sleep(Duration::from_millis(250)).await;
 
-    // Grab goal with clamp
-    basic.turn_to_heading(dt, 315.0.deg()).await;
-
-    basic
-        .linear_controller
-        .set_output_limit(Some(Motor::V5_MAX_VOLTAGE * 0.35));
-    basic.drive_distance(dt, -19.0).await;
-    basic
-        .linear_controller
-        .set_output_limit(Some(Motor::V5_MAX_VOLTAGE));
+    // Clamp goal
+    let goal_angle = 124.0.deg();
+    basic.linear_controller.set_output_limit(Some(Motor::V5_MAX_VOLTAGE * 0.5));
+    basic.drive_distance_at_heading(dt, -25.0, goal_angle).await;
+    basic.linear_controller.set_output_limit(None);
     
-    sleep(Duration::from_millis(250)).await;
+    sleep(Duration::from_millis(500)).await;
+
     _ = bot.clamp.set_high();
 
-    basic.drive_distance(dt, 16.0).await;
+    // First stack
+    let stack_angle = 154.0.deg();
+    basic.turn_to_heading(dt, stack_angle).await;
+    bot.intake.set_voltage(10.0);
+    _ = bot.intake_raiser.set_high();
 
-    // Intake stack
-    basic.turn_to_heading(dt, 195.0.deg()).await;
+    basic.drive_distance_at_heading(dt, 42.0, stack_angle).await;
+    _ = bot.intake_raiser.set_low();
 
-    bot.intake.set_bottom_voltage(Motor::V5_MAX_VOLTAGE);
-    bot.intake.set_top_voltage(Motor::V5_MAX_VOLTAGE * 0.9);
+    sleep(Duration::from_millis(250)).await;
+    basic.drive_distance_at_heading(dt, -5.0, stack_angle).await;
+    basic.drive_distance_at_heading(dt, 29.0, stack_angle).await;
 
-    basic
-        .linear_controller
-        .set_output_limit(Some(Motor::V5_MAX_VOLTAGE * 0.25));
-    basic.drive_distance(dt, 30.0).await;
-    basic.drive_distance(dt, -5.0).await;
-    sleep(Duration::from_millis(350)).await;
-    basic
-        .linear_controller
-        .set_output_limit(Some(Motor::V5_MAX_VOLTAGE * 0.3));
-    
-    // Intake stack 2
-    basic.turn_to_heading(dt, 273.0.deg()).await;
-    basic.drive_distance(dt, 31.0).await;
-    basic.drive_distance(dt, -6.75).await;
+    // Intake top of second stack
+    let stack_angle = 90.0.deg();
+    basic.turn_to_heading(dt, stack_angle).await;
+    _ = bot.intake_raiser.set_high();
+    basic.drive_distance_at_heading(dt, 8.0, stack_angle).await;
+    _ = bot.intake_raiser.set_low();
+    sleep(Duration::from_millis(250)).await;
+    basic.drive_distance_at_heading(dt, -5.0, stack_angle).await;
+    sleep(Duration::from_millis(500)).await;
 
-    basic.turn_to_heading(dt, 225.0.deg()).await;
-    basic.drive_distance(dt, 19.0).await;
+    seeking.move_to_point(dt, (-15.0, 15.0)).await;
+
+    // Third stack
+    let stack_angle = 225.0.deg();
+    basic.turn_to_heading(dt, stack_angle).await;
+
+    basic.linear_controller.set_output_limit(Some(Motor::V5_MAX_VOLTAGE * 0.2));
+    basic.linear_tolerances.timeout = Some(Duration::from_secs(4));
+    basic.angular_tolerances.timeout = Some(Duration::from_secs(4));
+    basic.drive_distance_at_heading(dt, 40.0, stack_angle).await;
+    basic.linear_controller.set_output_limit(None);
 
     basic
         .linear_controller
@@ -109,9 +117,8 @@ pub async fn blue_positive_right(bot: &mut Robot) -> Result<(), Box<dyn Error>> 
     basic.turn_to_heading(dt, 45.0.deg()).await;
     _ = bot.clamp.set_low();
     basic.drive_distance(dt, -18.0).await;
-    basic.drive_distance_at_heading(dt, 58.0, 45.0.deg()).await;
-    bot.lady_brown
-        .set_target(LadyBrownTarget::Position(LADY_BROWN_SCORED));
+
+    seeking.move_to_point(dt, (-30.0, 24.0)).await;
 
     Ok(())
 }

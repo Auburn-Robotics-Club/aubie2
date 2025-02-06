@@ -13,7 +13,7 @@ use crate::hardware::Solenoid;
 
 pub struct Overclock<S: Solenoid, F: ControlLoop<Input = f64, Output = f64> + 'static> {
     lift: S,
-    flipper_feedback: Rc<RefCell<F>>,
+    pub flipper_feedback: Rc<RefCell<F>>,
     target: Rc<RefCell<Position>>,
     _task: Task<()>,
 }
