@@ -15,7 +15,7 @@ use vexide::prelude::*;
 use super::{ANGULAR_PID, ANGULAR_TOLERANCES, LINEAR_PID, LINEAR_TOLERANCES};
 use crate::{Robot, LADY_BROWN_LOWERED, LADY_BROWN_RAISED, LADY_BROWN_SCORED};
 
-pub async fn blue_positive_right(bot: &mut Robot) -> Result<(), Box<dyn Error>> {
+pub async fn blue(bot: &mut Robot) -> Result<(), Box<dyn Error>> {
     let dt = &mut bot.drivetrain;
     bot.intake.set_reject_color(Some(RejectColor::Red));
     dt.tracking.set_heading(90.0.deg());
@@ -74,7 +74,7 @@ pub async fn blue_positive_right(bot: &mut Robot) -> Result<(), Box<dyn Error>> 
 
     sleep(Duration::from_millis(250)).await;
     basic.drive_distance_at_heading(dt, -5.0, stack_angle).await;
-    basic.drive_distance_at_heading(dt, 29.0, stack_angle).await;
+    basic.drive_distance_at_heading(dt, 30.0, stack_angle).await;
 
     // Intake top of second stack
     let stack_angle = 90.0.deg();
@@ -86,21 +86,24 @@ pub async fn blue_positive_right(bot: &mut Robot) -> Result<(), Box<dyn Error>> 
     basic.drive_distance_at_heading(dt, -5.0, stack_angle).await;
     sleep(Duration::from_millis(500)).await;
 
-    seeking.move_to_point(dt, (-15.0, 15.0)).await;
-
     // Third stack
+    basic.turn_to_heading(dt, 135.0.deg()).await;
+    basic.drive_distance(dt, -36.0).await;
+
     let stack_angle = 225.0.deg();
     basic.turn_to_heading(dt, stack_angle).await;
 
     basic.linear_controller.set_output_limit(Some(Motor::V5_MAX_VOLTAGE * 0.2));
     basic.linear_tolerances.timeout = Some(Duration::from_secs(4));
     basic.angular_tolerances.timeout = Some(Duration::from_secs(4));
-    basic.drive_distance_at_heading(dt, 40.0, stack_angle).await;
+    basic.drive_distance_at_heading(dt, 39.0, stack_angle).await;
     basic.linear_controller.set_output_limit(None);
 
     basic
         .linear_controller
-        .set_output_limit(Some(Motor::V5_MAX_VOLTAGE * 0.4));
+        .set_output_limit(Some(Motor::V5_MAX_VOLTAGE * 0.3));
+    basic.linear_tolerances.timeout = Some(Duration::from_secs(2));
+    basic.angular_tolerances.timeout = Some(Duration::from_secs(2));
     basic.drive_distance(dt, -20.0).await;
     basic.drive_distance(dt, 20.0).await;
     basic.drive_distance(dt, -20.0).await;
@@ -116,9 +119,10 @@ pub async fn blue_positive_right(bot: &mut Robot) -> Result<(), Box<dyn Error>> 
 
     basic.turn_to_heading(dt, 45.0.deg()).await;
     _ = bot.clamp.set_low();
-    basic.drive_distance(dt, -18.0).await;
+    basic.drive_distance_at_heading(dt, -18.0, 45.0.deg()).await;
 
-    seeking.move_to_point(dt, (-30.0, 24.0)).await;
+    basic.drive_distance_at_heading(dt, 36.0, 90.0.deg()).await;
+    basic.turn_to_heading(dt, 270.0.deg()).await;
 
     Ok(())
 }

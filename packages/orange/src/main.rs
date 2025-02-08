@@ -5,13 +5,10 @@ extern crate alloc;
 
 mod autons;
 
-use core::time::Duration;
-
 use aubie2::{
     logger::SerialLogger,
     subsystems::{
-        lady_brown::{LadyBrown, LadyBrownTarget},
-        Grabber, Intake,
+        lady_brown::{LadyBrown, LadyBrownTarget}, Grabber, Intake
     },
     theme::THEME_WAR_EAGLE,
 };
@@ -19,9 +16,9 @@ use evian::{control::Pid, prelude::*};
 use log::{error, info, LevelFilter};
 use vexide::{core::time::Instant, prelude::*};
 
-pub const LADY_BROWN_LOWERED: Position = Position::from_degrees(337.0);
-pub const LADY_BROWN_RAISED: Position = Position::from_degrees(304.0);
-pub const LADY_BROWN_SCORED: Position = Position::from_degrees(180.0);
+pub const LADY_BROWN_LOWERED: Position = Position::from_degrees(250.0);
+pub const LADY_BROWN_RAISED: Position = Position::from_degrees(210.0);
+pub const LADY_BROWN_SCORED: Position = Position::from_degrees(85.0);
 
 static LOGGER: SerialLogger = SerialLogger;
 
@@ -39,7 +36,7 @@ impl Compete for Robot {
     async fn autonomous(&mut self) {
         let start = Instant::now();
 
-        match autons::blue_positive_right(self).await {
+        match autons::skills(self).await {
             Ok(()) => {
                 info!("Route completed successfully in {:?}.", start.elapsed());
             }
@@ -136,11 +133,10 @@ impl Compete for Robot {
 async fn main(peripherals: Peripherals) {
     LOGGER.init(LevelFilter::Trace).unwrap();
 
-    info!("Calibrating IMU");
     let mut imu = InertialSensor::new(peripherals.port_12);
-
+    
+    info!("Calibrating IMU");
     imu.calibrate().await.unwrap();
-
     info!("Calibration complete.");
 
     let robot = Robot {
@@ -199,7 +195,7 @@ async fn main(peripherals: Peripherals) {
             ],
             RotationSensor::new(peripherals.port_18, Direction::Forward),
             Pid::new(0.3, 0.0, 0.003, None),
-            Position::from_degrees(170.0)
+            Position::from_degrees(85.0)
         ),
 
         // Mogo

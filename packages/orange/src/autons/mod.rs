@@ -16,14 +16,14 @@ use vexide::prelude::*;
 use crate::{Robot, LADY_BROWN_LOWERED, LADY_BROWN_RAISED, LADY_BROWN_SCORED};
 
 mod blue_carter_special;
-mod blue_positive_right;
-mod red_positive_right;
+mod blue;
+mod red;
 mod skills;
 mod testing;
 
 pub use blue_carter_special::blue_carter_special;
-pub use blue_positive_right::blue_positive_right;
-pub use red_positive_right::red_positive_right;
+pub use blue::blue;
+pub use red::red;
 pub use skills::skills;
 pub use testing::testing;
 
@@ -31,8 +31,8 @@ const LINEAR_PID: Pid = Pid::new(1.0, 0.0, 0.125, None);
 const ANGULAR_PID: AngularPid = AngularPid::new(16.0, 0.0, 1.0, None);
 
 const LINEAR_TOLERANCES: Tolerances = Tolerances::new()
-    .error_tolerance(5.0)
-    .velocity_tolerance(0.4)
+    .error_tolerance(4.0)
+    .velocity_tolerance(0.25)
     .tolerance_duration(Duration::from_millis(15))
     .timeout(Duration::from_secs(10));
 const ANGULAR_TOLERANCES: Tolerances = Tolerances::new()

@@ -28,7 +28,7 @@ impl Compete for Robot {
     async fn autonomous(&mut self) {
         let start = Instant::now();
 
-        match autons::testing(self).await {
+        match autons::red(self).await {
             Ok(()) => {
                 info!("Route completed successfully in {:?}.", start.elapsed());
             }
@@ -123,14 +123,9 @@ async fn main(peripherals: Peripherals) {
     LOGGER.init(LevelFilter::Trace).unwrap();
 
     let mut imu = InertialSensor::new(peripherals.port_21);
-
-    if let Err(err) = imu.calibrate().await {
-        error!("IMU Calibration failed: {err}. Retrying...");
-        if let Err(err) = imu.calibrate().await {
-            error!("IMU Calibration failed again: {err}. Waiting 3 seconds...");
-            sleep(Duration::from_secs(3)).await;
-        }
-    }
+    
+    info!("Calibrating IMU");
+    imu.calibrate().await.unwrap();
     info!("Calibration complete.");
 
     let robot = Robot {

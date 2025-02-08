@@ -33,7 +33,6 @@ pub async fn skills(bot: &mut Robot) -> Result<(), Box<dyn Error>> {
     bot.intake.set_reject_color(Some(RejectColor::Blue));
 
     // Grab goal
-
     basic
         .linear_controller
         .set_output_limit(Some(Motor::V5_MAX_VOLTAGE * 0.35));

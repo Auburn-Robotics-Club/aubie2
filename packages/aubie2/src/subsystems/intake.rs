@@ -48,6 +48,7 @@ impl Intake {
             reject_color: reject_color.clone(),
             _task: spawn(async move {
                 _ = optical.set_integration_time(Duration::from_millis(6));
+                _ = optical.set_led_brightness(1.0);
 
                 let mut rejecting = false;
                 let mut reject_timestamp = Instant::now();
@@ -72,10 +73,10 @@ impl Intake {
 
                         if in_prox {
                             if let Ok(hue) = optical.hue() {
-                                log::debug!("Hue in proximity: {}", hue);
+                                // log::debug!("Hue in proximity: {}", hue);
                                 let matches_bad_ring_color = in_prox
                                     && match reject_color {
-                                        RejectColor::Blue => (67.0..250.0).contains(&hue),
+                                        RejectColor::Blue => (100.0..250.0).contains(&hue),
                                         RejectColor::Red => {
                                             (0.0..40.0).contains(&hue)
                                                 || (340.0..360.0).contains(&hue)
@@ -94,8 +95,8 @@ impl Intake {
                     let reject_elapsed = reject_timestamp.elapsed();
 
                     if rejecting
-                        && reject_elapsed > Duration::from_millis(80)
-                        && reject_elapsed < Duration::from_millis(200)
+                        && reject_elapsed > Duration::from_millis(50)
+                        && reject_elapsed < Duration::from_millis(350)
                     {
                         if top_voltage > 0.0 {
                             for motor in top_motors.iter_mut() {
