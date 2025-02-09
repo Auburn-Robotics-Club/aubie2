@@ -47,7 +47,7 @@ impl Intake {
             bottom_voltage: bottom_voltage.clone(),
             reject_color: reject_color.clone(),
             _task: spawn(async move {
-                _ = optical.set_integration_time(Duration::from_millis(6));
+                _ = optical.set_integration_time(Duration::from_millis(4));
                 _ = optical.set_led_brightness(1.0);
 
                 let mut rejecting = false;
@@ -61,24 +61,24 @@ impl Intake {
 
                     if let Some(reject_color) = *reject_color.borrow() {
                         if let Ok(prox) = optical.proximity() {
-                            if prox > 0.5 && !in_prox {
+                            if prox > 0.3 && !in_prox {
                                 prox_timestamp = Instant::now();
                                 in_prox = true;
                             }
 
-                            if in_prox && prox_timestamp.elapsed() > Duration::from_millis(15) {
+                            if in_prox && prox_timestamp.elapsed() > Duration::from_millis(20) {
                                 in_prox = false;
                             }
                         }
 
                         if in_prox {
                             if let Ok(hue) = optical.hue() {
-                                // log::debug!("Hue in proximity: {}", hue);
+                                log::debug!("Hue in proximity: {}", hue);
                                 let matches_bad_ring_color = in_prox
                                     && match reject_color {
-                                        RejectColor::Blue => (100.0..250.0).contains(&hue),
+                                        RejectColor::Blue => (90.0..250.0).contains(&hue),
                                         RejectColor::Red => {
-                                            (0.0..40.0).contains(&hue)
+                                            (0.0..60.0).contains(&hue)
                                                 || (340.0..360.0).contains(&hue)
                                         }
                                     };
@@ -95,8 +95,8 @@ impl Intake {
                     let reject_elapsed = reject_timestamp.elapsed();
 
                     if rejecting
-                        && reject_elapsed > Duration::from_millis(50)
-                        && reject_elapsed < Duration::from_millis(350)
+                        && reject_elapsed > Duration::from_millis(40)
+                        && reject_elapsed < Duration::from_millis(300)
                     {
                         if top_voltage > 0.0 {
                             for motor in top_motors.iter_mut() {

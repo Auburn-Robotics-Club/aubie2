@@ -5,16 +5,17 @@ extern crate alloc;
 
 mod autons;
 
+use alloc::format;
 use aubie2::{
     logger::SerialLogger,
     subsystems::{
-        lady_brown::{LadyBrown, LadyBrownTarget}, Grabber, Intake
+        intake::RejectColor, lady_brown::{LadyBrown, LadyBrownTarget}, Grabber, Intake
     },
     theme::THEME_WAR_EAGLE,
 };
 use evian::{control::Pid, prelude::*};
 use log::{error, info, LevelFilter};
-use vexide::{core::time::Instant, prelude::*};
+use vexide::{core::time::Instant, devices::{display::{Font, FontFamily, FontSize, HAlign, Text, VAlign}, math::Point2}, prelude::*};
 
 pub const LADY_BROWN_LOWERED: Position = Position::from_degrees(250.0);
 pub const LADY_BROWN_RAISED: Position = Position::from_degrees(210.0);
@@ -59,7 +60,7 @@ impl Compete for Robot {
     }
 
     async fn driver(&mut self) {
-        self.intake.set_reject_color(None);
+        self.intake.set_reject_color(Some(RejectColor::Blue));
 
         loop {
             let state = self.controller.state().unwrap_or_default();
@@ -133,11 +134,29 @@ impl Compete for Robot {
 async fn main(peripherals: Peripherals) {
     LOGGER.init(LevelFilter::Trace).unwrap();
 
+    let mut display = peripherals.display;
     let mut imu = InertialSensor::new(peripherals.port_12);
-    
+
     info!("Calibrating IMU");
+    let imu_calibration_start = Instant::now();
     imu.calibrate().await.unwrap();
-    info!("Calibration complete.");
+    let imu_calibration_elapsed = imu_calibration_start.elapsed();
+    info!("Calibration completed in {:?}.", imu_calibration_elapsed);
+
+    display.draw_text(
+        &Text::new_aligned(
+            &format!("{:?}", imu_calibration_elapsed),
+            Font::new(FontSize::LARGE, FontFamily::Monospace),
+            Point2 {
+                x: Display::HORIZONTAL_RESOLUTION / 2,
+                y: Display::VERTICAL_RESOLUTION / 2,
+            },
+            HAlign::Center,
+            VAlign::Center,
+        ),
+        Rgb::new(255, 255, 255),
+        None,
+    );
 
     let robot = Robot {
         // Controller

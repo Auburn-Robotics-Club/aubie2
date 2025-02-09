@@ -10,7 +10,7 @@ use evian::{
     differential::motion::{BasicMotion, Seeking},
     prelude::*,
 };
-use vexide::prelude::*;
+use vexide::{core::time::Instant, prelude::*};
 
 use super::{ANGULAR_PID, ANGULAR_TOLERANCES, LINEAR_PID, LINEAR_TOLERANCES};
 use crate::{Robot, LADY_BROWN_LOWERED, LADY_BROWN_RAISED, LADY_BROWN_SCORED};
@@ -31,6 +31,11 @@ pub async fn blue(bot: &mut Robot) -> Result<(), Box<dyn Error>> {
         linear_tolerances: LINEAR_TOLERANCES,
         angular_tolerances: ANGULAR_TOLERANCES,
     };
+
+    let start = Instant::now();
+
+    // Intake deploy
+    bot.intake.set_bottom_voltage(-Motor::V5_MAX_VOLTAGE);
 
     // Goal rush
     _ = bot.grabber.extend();
@@ -54,7 +59,7 @@ pub async fn blue(bot: &mut Robot) -> Result<(), Box<dyn Error>> {
     sleep(Duration::from_millis(250)).await;
 
     // Clamp goal
-    let goal_angle = 124.0.deg();
+    let goal_angle = 127.0.deg();
     basic.linear_controller.set_output_limit(Some(Motor::V5_MAX_VOLTAGE * 0.5));
     basic.drive_distance_at_heading(dt, -25.0, goal_angle).await;
     basic.linear_controller.set_output_limit(None);
@@ -64,7 +69,7 @@ pub async fn blue(bot: &mut Robot) -> Result<(), Box<dyn Error>> {
     _ = bot.clamp.set_high();
 
     // First stack
-    let stack_angle = 154.0.deg();
+    let stack_angle = 150.0.deg();
     basic.turn_to_heading(dt, stack_angle).await;
     bot.intake.set_voltage(10.0);
     _ = bot.intake_raiser.set_high();
@@ -80,10 +85,10 @@ pub async fn blue(bot: &mut Robot) -> Result<(), Box<dyn Error>> {
     let stack_angle = 90.0.deg();
     basic.turn_to_heading(dt, stack_angle).await;
     _ = bot.intake_raiser.set_high();
-    basic.drive_distance_at_heading(dt, 8.0, stack_angle).await;
+    basic.drive_distance_at_heading(dt, 9.0, stack_angle).await;
     _ = bot.intake_raiser.set_low();
     sleep(Duration::from_millis(250)).await;
-    basic.drive_distance_at_heading(dt, -5.0, stack_angle).await;
+    basic.drive_distance_at_heading(dt, -6.0, stack_angle).await;
     sleep(Duration::from_millis(500)).await;
 
     // Third stack

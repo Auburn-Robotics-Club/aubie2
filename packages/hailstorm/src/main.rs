@@ -7,10 +7,18 @@ pub mod autons;
 
 use core::time::Duration;
 
+use alloc::format;
 use aubie2::{logger::SerialLogger, subsystems::overclock::Overclock, theme::THEME_WAR_EAGLE};
 use evian::{control::Pid, prelude::*};
 use log::{error, info, LevelFilter};
-use vexide::{core::time::Instant, prelude::*};
+use vexide::{
+    core::time::Instant,
+    devices::{
+        display::{Font, FontFamily, FontSize, HAlign, Text, VAlign},
+        math::Point2,
+    },
+    prelude::*,
+};
 
 static LOGGER: SerialLogger = SerialLogger;
 
@@ -28,7 +36,7 @@ impl Compete for Robot {
     async fn autonomous(&mut self) {
         let start = Instant::now();
 
-        match autons::red(self).await {
+        match autons::skills(self).await {
             Ok(()) => {
                 info!("Route completed successfully in {:?}.", start.elapsed());
             }
@@ -122,11 +130,29 @@ impl Compete for Robot {
 async fn main(peripherals: Peripherals) {
     LOGGER.init(LevelFilter::Trace).unwrap();
 
+    let mut display = peripherals.display;
     let mut imu = InertialSensor::new(peripherals.port_21);
-    
+
     info!("Calibrating IMU");
+    let imu_calibration_start = Instant::now();
     imu.calibrate().await.unwrap();
-    info!("Calibration complete.");
+    let imu_calibration_elapsed = imu_calibration_start.elapsed();
+    
+    info!("Calibration completed in {:?}.", imu_calibration_elapsed);
+    display.draw_text(
+        &Text::new_aligned(
+            &format!("{:?}", imu_calibration_elapsed),
+            Font::new(FontSize::LARGE, FontFamily::Monospace),
+            Point2 {
+                x: Display::HORIZONTAL_RESOLUTION / 2,
+                y: Display::VERTICAL_RESOLUTION / 2,
+            },
+            HAlign::Center,
+            VAlign::Center,
+        ),
+        Rgb::new(255, 255, 255),
+        None,
+    );
 
     let robot = Robot {
         // Controller

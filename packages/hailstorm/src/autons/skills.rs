@@ -1,6 +1,6 @@
 use alloc::boxed::Box;
 use vexide::prelude::Motor;
-use core::error::Error;
+use core::{error::Error, time::Duration};
 
 use evian::differential::motion::BasicMotion;
 
@@ -19,6 +19,8 @@ pub async fn skills(bot: &mut Robot) -> Result<(), Box<dyn Error>> {
     basic
         .linear_controller
         .set_output_limit(Some(Motor::V5_MAX_VOLTAGE * 0.35));
+    basic.linear_tolerances.timeout = Some(Duration::from_secs(10));
+    basic.angular_tolerances.timeout = Some(Duration::from_secs(10));;
     basic.drive_distance(dt, -200.0).await;
     basic.drive_distance(dt, 40.0).await;
 

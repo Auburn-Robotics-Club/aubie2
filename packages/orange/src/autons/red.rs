@@ -11,7 +11,7 @@ use evian::{
     differential::motion::{BasicMotion, Seeking},
     prelude::*,
 };
-use vexide::prelude::*;
+use vexide::{core::time::Instant, prelude::*};
 
 use super::{ANGULAR_PID, ANGULAR_TOLERANCES, LINEAR_PID, LINEAR_TOLERANCES};
 use crate::{Robot, LADY_BROWN_LOWERED, LADY_BROWN_RAISED, LADY_BROWN_SCORED};
@@ -32,6 +32,11 @@ pub async fn red(bot: &mut Robot) -> Result<(), Box<dyn Error>> {
         linear_tolerances: LINEAR_TOLERANCES,
         angular_tolerances: ANGULAR_TOLERANCES,
     };
+
+    let start = Instant::now();
+
+    // Intake deploy
+    bot.intake.set_bottom_voltage(-Motor::V5_MAX_VOLTAGE);
 
     // Goal rush
     _ = bot.grabber.extend();
@@ -62,7 +67,7 @@ pub async fn red(bot: &mut Robot) -> Result<(), Box<dyn Error>> {
         .set_output_limit(Some(Motor::V5_MAX_VOLTAGE * 0.7));
 
     // Intake first stack
-    bot.intake.set_voltage(14.0);
+    bot.intake.set_voltage(12.0);
     basic.drive_distance_at_heading(dt, 47.0, 0.0.deg()).await;
     sleep(Duration::from_millis(500)).await; // wait for ring to intake before 90 degree turn
 
@@ -74,7 +79,7 @@ pub async fn red(bot: &mut Robot) -> Result<(), Box<dyn Error>> {
     basic
         .linear_controller
         .set_output_limit(Some(Motor::V5_MAX_VOLTAGE * 0.3));
-    basic.drive_distance_at_heading(dt, 24.0, stack_angle).await;
+    basic.drive_distance_at_heading(dt, 22.0, stack_angle).await;
     basic
         .linear_controller
         .set_output_limit(Some(Motor::V5_MAX_VOLTAGE * 0.7));
