@@ -5,9 +5,9 @@ extern crate alloc;
 
 pub mod autons;
 
+use alloc::format;
 use core::time::Duration;
 
-use alloc::format;
 use aubie2::{logger::SerialLogger, subsystems::overclock::Overclock, theme::THEME_WAR_EAGLE};
 use evian::{control::Pid, prelude::*};
 use log::{error, info, LevelFilter};
@@ -137,7 +137,7 @@ async fn main(peripherals: Peripherals) {
     let imu_calibration_start = Instant::now();
     imu.calibrate().await.unwrap();
     let imu_calibration_elapsed = imu_calibration_start.elapsed();
-    
+
     info!("Calibration completed in {:?}.", imu_calibration_elapsed);
     display.draw_text(
         &Text::new_aligned(

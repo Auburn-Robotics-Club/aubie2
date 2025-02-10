@@ -1,34 +1,24 @@
 use alloc::boxed::Box;
-use core::{
-    error::Error,
-    f64::{consts::PI, MAX},
-    time::Duration,
-};
+use core::error::Error;
 
-use aubie2::subsystems::{intake::RejectColor, lady_brown::LadyBrownTarget};
-use evian::{
-    control::{AngularPid, Pid, Tolerances},
-    differential::motion::{BasicMotion, Seeking},
-    prelude::*,
-};
-use vexide::prelude::*;
+// use evian::differential::motion::{BasicMotion, Seeking};
 
-use super::{ANGULAR_PID, ANGULAR_TOLERANCES, LINEAR_PID, LINEAR_TOLERANCES};
-use crate::{Robot, LADY_BROWN_LOWERED, LADY_BROWN_RAISED, LADY_BROWN_SCORED};
+// use super::{ANGULAR_PID, ANGULAR_TOLERANCES, LINEAR_PID, LINEAR_TOLERANCES};
+use crate::Robot;
 
-pub async fn testing(bot: &mut Robot) -> Result<(), Box<dyn Error>> {
-    let dt = &mut bot.drivetrain;
-    let mut seeking = Seeking {
-        linear_controller: LINEAR_PID,
-        angular_controller: ANGULAR_PID,
-        tolerances: LINEAR_TOLERANCES,
-    };
-    let mut basic = BasicMotion {
-        linear_controller: LINEAR_PID,
-        angular_controller: ANGULAR_PID,
-        linear_tolerances: LINEAR_TOLERANCES,
-        angular_tolerances: ANGULAR_TOLERANCES,
-    };
+pub async fn testing(_bot: &mut Robot) -> Result<(), Box<dyn Error>> {
+    // let dt = &mut bot.drivetrain;
+    // let mut seeking = Seeking {
+    //     linear_controller: LINEAR_PID,
+    //     angular_controller: ANGULAR_PID,
+    //     tolerances: LINEAR_TOLERANCES,
+    // };
+    // let mut basic = BasicMotion {
+    //     linear_controller: LINEAR_PID,
+    //     angular_controller: ANGULAR_PID,
+    //     linear_tolerances: LINEAR_TOLERANCES,
+    //     angular_tolerances: ANGULAR_TOLERANCES,
+    // };
 
     Ok(())
 }

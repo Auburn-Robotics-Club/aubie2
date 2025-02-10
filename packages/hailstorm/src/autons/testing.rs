@@ -1,8 +1,8 @@
 use alloc::boxed::Box;
-use vexide::prelude::sleep;
 use core::{error::Error, time::Duration};
 
 use evian::{differential::motion::BasicMotion, math::IntoAngle, prelude::TracksHeading};
+use vexide::prelude::sleep;
 
 use super::{ANGULAR_PID, ANGULAR_TOLERANCES, LINEAR_PID, LINEAR_TOLERANCES};
 use crate::Robot;

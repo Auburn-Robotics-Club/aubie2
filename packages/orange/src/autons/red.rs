@@ -1,39 +1,24 @@
 use alloc::boxed::Box;
-use core::{
-    error::Error,
-    f64::{consts::PI, MAX},
-    time::Duration,
-};
+use core::{error::Error, time::Duration};
 
-use aubie2::subsystems::{intake::RejectColor, lady_brown::LadyBrownTarget};
-use evian::{
-    control::{AngularPid, Pid, Tolerances},
-    differential::motion::{BasicMotion, Seeking},
-    prelude::*,
-};
-use vexide::{core::time::Instant, prelude::*};
+use aubie2::subsystems::intake::RingColor;
+use evian::{differential::motion::BasicMotion, prelude::*};
+use vexide::prelude::*;
 
 use super::{ANGULAR_PID, ANGULAR_TOLERANCES, LINEAR_PID, LINEAR_TOLERANCES};
-use crate::{Robot, LADY_BROWN_LOWERED, LADY_BROWN_RAISED, LADY_BROWN_SCORED};
+use crate::Robot;
 
 pub async fn red(bot: &mut Robot) -> Result<(), Box<dyn Error>> {
     let dt = &mut bot.drivetrain;
-    bot.intake.set_reject_color(Some(RejectColor::Blue));
+    bot.intake.set_reject_color(Some(RingColor::Blue));
     dt.tracking.set_heading(90.0.deg());
 
-    let mut seeking = Seeking {
-        linear_controller: LINEAR_PID,
-        angular_controller: ANGULAR_PID,
-        tolerances: LINEAR_TOLERANCES,
-    };
     let mut basic = BasicMotion {
         linear_controller: LINEAR_PID,
         angular_controller: ANGULAR_PID,
         linear_tolerances: LINEAR_TOLERANCES,
         angular_tolerances: ANGULAR_TOLERANCES,
     };
-
-    let start = Instant::now();
 
     // Intake deploy
     bot.intake.set_bottom_voltage(-Motor::V5_MAX_VOLTAGE);
@@ -134,7 +119,9 @@ pub async fn red(bot: &mut Robot) -> Result<(), Box<dyn Error>> {
     basic.turn_to_heading(dt, 135.0.deg()).await;
 
     _ = bot.clamp.set_low();
-    basic.drive_distance_at_heading(dt, -18.0, 135.0.deg()).await;
+    basic
+        .drive_distance_at_heading(dt, -18.0, 135.0.deg())
+        .await;
 
     basic.drive_distance_at_heading(dt, 36.0, 90.0.deg()).await;
     basic.turn_to_heading(dt, 270.0.deg()).await;

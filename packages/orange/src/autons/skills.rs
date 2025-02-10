@@ -1,13 +1,8 @@
 use alloc::boxed::Box;
-use core::{
-    error::Error,
-    f64::{consts::PI, MAX},
-    time::Duration,
-};
+use core::{error::Error, time::Duration};
 
-use aubie2::subsystems::{intake::RejectColor, lady_brown::LadyBrownTarget};
+use aubie2::subsystems::lady_brown::LadyBrownTarget;
 use evian::{
-    control::{AngularPid, Pid, Tolerances},
     differential::motion::{BasicMotion, Seeking},
     prelude::*,
 };
@@ -34,7 +29,9 @@ pub async fn skills(bot: &mut Robot) -> Result<(), Box<dyn Error>> {
     basic
         .linear_controller
         .set_output_limit(Some(Motor::V5_MAX_VOLTAGE * 0.35));
-    basic.drive_distance_at_heading(dt, -34.0, 245.0.deg()).await;
+    basic
+        .drive_distance_at_heading(dt, -34.0, 245.0.deg())
+        .await;
     basic
         .linear_controller
         .set_output_limit(Some(Motor::V5_MAX_VOLTAGE));
@@ -64,7 +61,7 @@ pub async fn skills(bot: &mut Robot) -> Result<(), Box<dyn Error>> {
     basic.drive_distance_at_heading(dt, 51.0, 313.0.deg()).await;
     basic
         .linear_controller
-        .set_output_limit(Some(Motor::V5_MAX_VOLTAGE));    
+        .set_output_limit(Some(Motor::V5_MAX_VOLTAGE));
     sleep(Duration::from_millis(1500)).await;
 
     // turn around and score goal

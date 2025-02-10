@@ -3,19 +3,28 @@
 
 extern crate alloc;
 
-mod autons;
+pub mod autons;
 
 use alloc::format;
+
 use aubie2::{
     logger::SerialLogger,
     subsystems::{
-        intake::RejectColor, lady_brown::{LadyBrown, LadyBrownTarget}, Grabber, Intake
+        lady_brown::{LadyBrown, LadyBrownTarget},
+        Grabber, Intake,
     },
     theme::THEME_WAR_EAGLE,
 };
 use evian::{control::Pid, prelude::*};
 use log::{error, info, LevelFilter};
-use vexide::{core::time::Instant, devices::{display::{Font, FontFamily, FontSize, HAlign, Text, VAlign}, math::Point2}, prelude::*};
+use vexide::{
+    core::time::Instant,
+    devices::{
+        display::{Font, FontFamily, FontSize, HAlign, Text, VAlign},
+        math::Point2,
+    },
+    prelude::*,
+};
 
 pub const LADY_BROWN_LOWERED: Position = Position::from_degrees(250.0);
 pub const LADY_BROWN_RAISED: Position = Position::from_degrees(210.0);
@@ -214,7 +223,7 @@ async fn main(peripherals: Peripherals) {
             ],
             RotationSensor::new(peripherals.port_18, Direction::Forward),
             Pid::new(0.3, 0.0, 0.003, None),
-            Position::from_degrees(0.0)
+            Position::from_degrees(0.0),
         ),
 
         // Mogo

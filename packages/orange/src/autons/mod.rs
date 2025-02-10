@@ -1,27 +1,12 @@
-use alloc::boxed::Box;
-use core::{
-    error::Error,
-    f64::{consts::PI, MAX},
-    time::Duration,
-};
+use core::{f64::consts::PI, time::Duration};
 
-use aubie2::subsystems::{intake::RejectColor, lady_brown::LadyBrownTarget};
-use evian::{
-    control::{AngularPid, Pid, Tolerances},
-    differential::motion::{BasicMotion, Seeking},
-    prelude::*,
-};
-use vexide::prelude::*;
+use evian::control::{AngularPid, Pid, Tolerances};
 
-use crate::{Robot, LADY_BROWN_LOWERED, LADY_BROWN_RAISED, LADY_BROWN_SCORED};
-
-mod blue_carter_special;
 mod blue;
 mod red;
 mod skills;
 mod testing;
 
-pub use blue_carter_special::blue_carter_special;
 pub use blue::blue;
 pub use red::red;
 pub use skills::skills;

@@ -15,7 +15,7 @@ use vexide::{
 
 /// Intake Rejection Color
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
-pub enum RejectColor {
+pub enum RingColor {
     /// Reject blue rings
     Blue,
 
@@ -28,7 +28,7 @@ pub struct Intake {
     _task: Task<()>,
     top_voltage: Arc<AtomicI32>,
     bottom_voltage: Arc<AtomicI32>,
-    reject_color: Rc<RefCell<Option<RejectColor>>>,
+    reject_color: Rc<RefCell<Option<RingColor>>>,
 }
 
 impl Intake {
@@ -36,7 +36,7 @@ impl Intake {
         mut bottom_motors: [Motor; TOP_COUNT],
         mut top_motors: [Motor; BOTTOM_COUNT],
         mut optical: OpticalSensor,
-        reject_color: Option<RejectColor>,
+        reject_color: Option<RingColor>,
     ) -> Self {
         let top_voltage = Arc::new(AtomicI32::new(0));
         let bottom_voltage = Arc::new(AtomicI32::new(0));
@@ -76,8 +76,8 @@ impl Intake {
                                 log::debug!("Hue in proximity: {}", hue);
                                 let matches_bad_ring_color = in_prox
                                     && match reject_color {
-                                        RejectColor::Blue => (55.0..250.0).contains(&hue),
-                                        RejectColor::Red => {
+                                        RingColor::Blue => (55.0..250.0).contains(&hue),
+                                        RingColor::Red => {
                                             (0.0..40.0).contains(&hue)
                                                 || (338.0..360.0).contains(&hue)
                                         }
@@ -136,7 +136,7 @@ impl Intake {
         self.bottom_voltage.store(voltage as i32, Ordering::Release);
     }
 
-    pub fn set_reject_color(&mut self, reject_color: Option<RejectColor>) {
+    pub fn set_reject_color(&mut self, reject_color: Option<RingColor>) {
         *self.reject_color.borrow_mut() = reject_color;
     }
 }

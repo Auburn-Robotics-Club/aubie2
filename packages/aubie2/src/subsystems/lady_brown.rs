@@ -40,9 +40,12 @@ impl LadyBrown {
                         Ok(position) => {
                             if position < max_position {
                                 let current_target = *target.borrow();
-                                if let LadyBrownTarget::Manual(MotorControl::Voltage(v)) = current_target {
+                                if let LadyBrownTarget::Manual(MotorControl::Voltage(v)) =
+                                    current_target
+                                {
                                     if v.is_sign_positive() {
-                                        *target.borrow_mut() = LadyBrownTarget::Position(max_position);
+                                        *target.borrow_mut() =
+                                            LadyBrownTarget::Position(max_position);
                                     }
                                 }
                             }

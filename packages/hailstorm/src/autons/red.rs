@@ -1,10 +1,7 @@
 use alloc::boxed::Box;
 use core::{error::Error, f64::consts::PI, time::Duration};
 
-use evian::{
-    differential::motion::{BasicMotion, Seeking},
-    prelude::*,
-};
+use evian::{differential::motion::BasicMotion, prelude::*};
 use vexide::prelude::*;
 
 use super::{ANGULAR_PID, ANGULAR_TOLERANCES, LINEAR_PID, LINEAR_TOLERANCES};
@@ -14,11 +11,6 @@ pub async fn red(bot: &mut Robot) -> Result<(), Box<dyn Error>> {
     let dt = &mut bot.drivetrain;
     dt.tracking.set_heading(270.0.deg());
 
-    let mut seeking = Seeking {
-        linear_controller: LINEAR_PID,
-        angular_controller: ANGULAR_PID,
-        tolerances: LINEAR_TOLERANCES,
-    };
     let mut basic = BasicMotion {
         linear_controller: LINEAR_PID,
         angular_controller: ANGULAR_PID,
