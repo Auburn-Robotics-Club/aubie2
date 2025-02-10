@@ -53,7 +53,7 @@ pub async fn red(bot: &mut Robot) -> Result<(), Box<dyn Error>> {
     _ = bot.grabber.release();
 
     // Grab goal
-    basic.drive_distance(dt, -27.0).await;
+    basic.drive_distance(dt, -26.0).await;
     _ = bot.grabber.retract();
     basic.turn_to_heading(dt, 0.0.deg()).await;
     basic

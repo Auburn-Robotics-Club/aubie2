@@ -41,7 +41,7 @@ pub async fn blue(bot: &mut Robot) -> Result<(), Box<dyn Error>> {
     _ = bot.grabber.extend();
     basic.linear_controller.set_kp(2.0);
     basic.linear_tolerances.tolerance_duration = Some(Duration::from_millis(0));
-    basic.drive_distance_at_heading(dt, 36.0, 144.0.deg()).await;
+    basic.drive_distance_at_heading(dt, 36.0, 142.0.deg()).await;
     _ = bot.grabber.pinch();
     basic.drive_distance(dt, -1.0).await;
     sleep(Duration::from_millis(15)).await;
@@ -71,7 +71,7 @@ pub async fn blue(bot: &mut Robot) -> Result<(), Box<dyn Error>> {
     // First stack
     let stack_angle = 150.0.deg();
     basic.turn_to_heading(dt, stack_angle).await;
-    bot.intake.set_voltage(10.0);
+    bot.intake.set_voltage(Motor::V5_MAX_VOLTAGE);
     _ = bot.intake_raiser.set_high();
 
     basic.drive_distance_at_heading(dt, 42.0, stack_angle).await;

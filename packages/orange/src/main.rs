@@ -37,7 +37,7 @@ impl Compete for Robot {
     async fn autonomous(&mut self) {
         let start = Instant::now();
 
-        match autons::skills(self).await {
+        match autons::red(self).await {
             Ok(()) => {
                 info!("Route completed successfully in {:?}.", start.elapsed());
             }
@@ -60,7 +60,7 @@ impl Compete for Robot {
     }
 
     async fn driver(&mut self) {
-        self.intake.set_reject_color(Some(RejectColor::Blue));
+        self.intake.set_reject_color(None);
 
         loop {
             let state = self.controller.state().unwrap_or_default();
@@ -214,7 +214,7 @@ async fn main(peripherals: Peripherals) {
             ],
             RotationSensor::new(peripherals.port_18, Direction::Forward),
             Pid::new(0.3, 0.0, 0.003, None),
-            Position::from_degrees(85.0)
+            Position::from_degrees(0.0)
         ),
 
         // Mogo

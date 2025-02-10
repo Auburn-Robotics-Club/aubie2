@@ -30,8 +30,6 @@ pub async fn skills(bot: &mut Robot) -> Result<(), Box<dyn Error>> {
         angular_tolerances: ANGULAR_TOLERANCES,
     };
 
-    bot.intake.set_reject_color(Some(RejectColor::Blue));
-
     // Grab goal
     basic
         .linear_controller
@@ -42,17 +40,19 @@ pub async fn skills(bot: &mut Robot) -> Result<(), Box<dyn Error>> {
         .set_output_limit(Some(Motor::V5_MAX_VOLTAGE));
     _ = bot.clamp.set_high();
 
+    sleep(Duration::from_millis(800)).await;
+
     // Intake first red ring.
     bot.intake.set_voltage(12.0);
-    basic.turn_to_heading(dt, 78.0.deg()).await;
-    basic.drive_distance(dt, 24.0).await;
+    basic.turn_to_heading(dt, 84.0.deg()).await;
+    basic.drive_distance_at_heading(dt, 24.0, 84.0.deg()).await;
     bot.intake.set_voltage(10.0);
     sleep(Duration::from_millis(500)).await;
 
     // Intake second red ring.
     basic.drive_distance(dt, -16.0).await;
     basic.turn_to_heading(dt, 198.0.deg()).await;
-    basic.drive_distance(dt, 22.0).await;
+    basic.drive_distance(dt, 23.0).await;
     sleep(Duration::from_millis(700)).await;
 
     // Intake third/fourth ring.
@@ -61,7 +61,7 @@ pub async fn skills(bot: &mut Robot) -> Result<(), Box<dyn Error>> {
     basic
         .linear_controller
         .set_output_limit(Some(Motor::V5_MAX_VOLTAGE * 0.4));
-    basic.drive_distance_at_heading(dt, 50.0, 313.0.deg()).await;
+    basic.drive_distance_at_heading(dt, 51.0, 313.0.deg()).await;
     basic
         .linear_controller
         .set_output_limit(Some(Motor::V5_MAX_VOLTAGE));    
@@ -112,7 +112,7 @@ pub async fn skills(bot: &mut Robot) -> Result<(), Box<dyn Error>> {
     basic.drive_distance(dt, -2.0).await;
     sleep(Duration::from_millis(500)).await;
 
-    basic.turn_to_heading(dt, 84.0.deg()).await;
+    basic.turn_to_heading(dt, 87.0.deg()).await;
     basic.drive_distance(dt, 27.0).await;
     basic.drive_distance(dt, -4.0).await;
     sleep(Duration::from_millis(500)).await;
