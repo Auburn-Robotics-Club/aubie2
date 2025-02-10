@@ -1,38 +1,24 @@
 use alloc::boxed::Box;
-use core::{
-    error::Error,
-    f64::{consts::PI, MAX},
-    time::Duration,
-};
+use core::{error::Error, time::Duration};
 
-use aubie2::subsystems::{intake::RejectColor, lady_brown::LadyBrownTarget};
-use evian::{
-    differential::motion::{BasicMotion, Seeking},
-    prelude::*,
-};
-use vexide::{core::time::Instant, prelude::*};
+use aubie2::subsystems::intake::RingColor;
+use evian::{differential::motion::BasicMotion, prelude::*};
+use vexide::prelude::*;
 
 use super::{ANGULAR_PID, ANGULAR_TOLERANCES, LINEAR_PID, LINEAR_TOLERANCES};
-use crate::{Robot, LADY_BROWN_LOWERED, LADY_BROWN_RAISED, LADY_BROWN_SCORED};
+use crate::Robot;
 
 pub async fn blue(bot: &mut Robot) -> Result<(), Box<dyn Error>> {
     let dt = &mut bot.drivetrain;
-    bot.intake.set_reject_color(Some(RejectColor::Red));
+    bot.intake.set_reject_color(Some(RingColor::Red));
     dt.tracking.set_heading(90.0.deg());
 
-    let mut seeking = Seeking {
-        linear_controller: LINEAR_PID,
-        angular_controller: ANGULAR_PID,
-        tolerances: LINEAR_TOLERANCES,
-    };
     let mut basic = BasicMotion {
         linear_controller: LINEAR_PID,
         angular_controller: ANGULAR_PID,
         linear_tolerances: LINEAR_TOLERANCES,
         angular_tolerances: ANGULAR_TOLERANCES,
     };
-
-    let start = Instant::now();
 
     // Intake deploy
     bot.intake.set_bottom_voltage(-Motor::V5_MAX_VOLTAGE);
@@ -49,8 +35,12 @@ pub async fn blue(bot: &mut Robot) -> Result<(), Box<dyn Error>> {
     basic.linear_tolerances.tolerance_duration = Some(Duration::from_millis(15));
 
     // Drag goal back and release from grabber
-    basic.angular_controller.set_output_limit(Some(Motor::V5_MAX_VOLTAGE * 0.7));
-    basic.drive_distance_at_heading(dt, -20.0, 128.0.deg()).await;
+    basic
+        .angular_controller
+        .set_output_limit(Some(Motor::V5_MAX_VOLTAGE * 0.7));
+    basic
+        .drive_distance_at_heading(dt, -20.0, 128.0.deg())
+        .await;
     basic.angular_controller.set_output_limit(None);
     _ = bot.grabber.release();
     sleep(Duration::from_millis(250)).await;
@@ -60,10 +50,12 @@ pub async fn blue(bot: &mut Robot) -> Result<(), Box<dyn Error>> {
 
     // Clamp goal
     let goal_angle = 127.0.deg();
-    basic.linear_controller.set_output_limit(Some(Motor::V5_MAX_VOLTAGE * 0.5));
+    basic
+        .linear_controller
+        .set_output_limit(Some(Motor::V5_MAX_VOLTAGE * 0.5));
     basic.drive_distance_at_heading(dt, -25.0, goal_angle).await;
     basic.linear_controller.set_output_limit(None);
-    
+
     sleep(Duration::from_millis(500)).await;
 
     _ = bot.clamp.set_high();
@@ -98,7 +90,9 @@ pub async fn blue(bot: &mut Robot) -> Result<(), Box<dyn Error>> {
     let stack_angle = 225.0.deg();
     basic.turn_to_heading(dt, stack_angle).await;
 
-    basic.linear_controller.set_output_limit(Some(Motor::V5_MAX_VOLTAGE * 0.2));
+    basic
+        .linear_controller
+        .set_output_limit(Some(Motor::V5_MAX_VOLTAGE * 0.2));
     basic.linear_tolerances.timeout = Some(Duration::from_secs(4));
     basic.angular_tolerances.timeout = Some(Duration::from_secs(4));
     basic.drive_distance_at_heading(dt, 39.0, stack_angle).await;
