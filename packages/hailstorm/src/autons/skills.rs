@@ -2,7 +2,7 @@ use alloc::boxed::Box;
 use vexide::prelude::{sleep, Motor};
 use core::{error::Error, time::Duration};
 
-use evian::differential::motion::BasicMotion;
+use evian::{differential::motion::BasicMotion, math::IntoAngle};
 
 use super::{ANGULAR_PID, ANGULAR_TOLERANCES, LINEAR_PID, LINEAR_TOLERANCES};
 use crate::Robot;
