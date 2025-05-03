@@ -1,7 +1,6 @@
 use evian::tracking::RotarySensor;
 use vexide::{
     devices::PortError,
-    io::println,
     prelude::{AdiEncoder, AdiPort, Position},
 };
 

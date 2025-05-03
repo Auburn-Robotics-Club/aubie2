@@ -5,32 +5,22 @@ extern crate alloc;
 
 pub mod autons;
 
-use alloc::format;
+use core::time::Duration;
 
 use aubie2::{
-    logger::SerialLogger,
-    subsystems::{
+    hardware::calibrate_imu, logger::SerialLogger, subsystems::{
         lady_brown::{LadyBrown, LadyBrownTarget},
-        Grabber, Intake,
-    },
-    theme::THEME_WAR_EAGLE,
+        Intake,
+    }, theme::THEME_WAR_EAGLE
 };
-use evian::{control::loops::Pid, prelude::*};
-use log::{info, LevelFilter};
-use vexide::{
-    devices::{
-        display::{Font, FontFamily, FontSize, HAlign, Text, VAlign},
-        math::Point2,
-    },
+use evian::{
+    control::loops::{AngularPid, Pid},
     prelude::*,
-    time::Instant,
 };
+use log::{info, LevelFilter};
+use vexide::{prelude::*, time::Instant};
 
-pub const LADY_BROWN_LOWERED: Position = Position::from_degrees(190.0);
-pub const LADY_BROWN_RAISED: Position = Position::from_degrees(154.0);
-pub const LADY_BROWN_SCORED: Position = Position::from_degrees(35.0);
-
-static LOGGER: SerialLogger = SerialLogger;
+// MARK: Robot
 
 pub struct Robot {
     controller: Controller,
@@ -38,28 +28,57 @@ pub struct Robot {
     intake: Intake,
     lady_brown: LadyBrown,
     clamp: AdiDigitalOut,
-    intake_raiser: AdiDigitalOut,
-    grabber: Grabber,
+    left_arm: AdiDigitalOut,
+    right_arm: AdiDigitalOut,
+    pinchers: AdiDigitalOut,
 }
+
+impl Robot {
+    // Measurements
+    pub const TRACK_WIDTH: f64 = 11.5;
+    pub const WHEEL_DIAMETER: f64 = 2.75;
+    pub const TRACKING_WHEEL_DIAMETER: f64 = 2.0;
+
+    pub const SIDEWAYS_TRACKING_WHEEL_OFFSET: f64 = -2.0;
+
+    // Lady Brown Positions
+    pub const LADY_BROWN_LOWERED: LadyBrownTarget =
+        LadyBrownTarget::Position(Position::from_degrees(190.0));
+    pub const LADY_BROWN_RAISED: LadyBrownTarget =
+        LadyBrownTarget::Position(Position::from_degrees(154.0));
+    pub const LADY_BROWN_UP: LadyBrownTarget =
+        LadyBrownTarget::Position(Position::from_degrees(35.0));
+    pub const LADY_BROWN_SCORED: LadyBrownTarget =
+        LadyBrownTarget::Position(Position::from_degrees(25.0));
+    pub const LADY_BROWN_FLAT: LadyBrownTarget =
+        LadyBrownTarget::Position(Position::from_degrees(0.0));
+
+    // Control Loops
+    pub const LINEAR_PID: Pid = Pid::new(1.5, 0.1, 0.125, Some(3.0));
+    pub const ANGUALR_PID: AngularPid =
+        AngularPid::new(25.0, 2.0, 1.0, Some(Angle::from_degrees(5.0)));
+    pub const LADY_BROWN_PID: Pid = Pid::new(0.19, 0.0, 0.01, None);
+
+    // Tolerances
+    pub const LINEAR_TOLERANCES: Tolerances = Tolerances::new()
+        .error(5.0)
+        .velocity(0.25)
+        .duration(Duration::from_millis(15));
+    pub const ANGULAR_TOLERANCES: Tolerances = Tolerances::new()
+        .error(f64::to_radians(8.0))
+        .velocity(0.05)
+        .duration(Duration::from_millis(15));
+}
+
+// MARK: Competition
 
 impl Compete for Robot {
     async fn autonomous(&mut self) {
         let start = Instant::now();
 
-        // match autons::red(self).await {
-        //     Ok(()) => {
-        //         info!("Route completed successfully in {:?}.", start.elapsed());
-        //     }
-        //     Err(err) => {
-        //         error!(
-        //             "Route encountered error after {:?}: {}",
-        //             start.elapsed(),
-        //             err
-        //         );
-        //     }
-        // }
+        self.route().await;
 
-        // Dump tracking info to get ending pose of robot.
+        info!("Route completed successfully in {:?}.", start.elapsed());
         info!(
             "Position: {}\nHeading: {}° ({}rad)",
             self.drivetrain.tracking.position(),
@@ -86,11 +105,10 @@ impl Compete for Robot {
             // Raise/lower ladybrown when B is pressed.
             if state.button_b.is_now_pressed() {
                 self.lady_brown.set_target(match self.lady_brown.target() {
-                    LadyBrownTarget::Position(state) => match state {
-                        LADY_BROWN_LOWERED => LadyBrownTarget::Position(LADY_BROWN_RAISED),
-                        _ => LadyBrownTarget::Position(LADY_BROWN_LOWERED),
-                    },
-                    LadyBrownTarget::Manual(_) => LadyBrownTarget::Position(LADY_BROWN_RAISED),
+                    Self::LADY_BROWN_LOWERED | LadyBrownTarget::Manual(_) => {
+                        Self::LADY_BROWN_RAISED
+                    }
+                    _ => Self::LADY_BROWN_LOWERED,
                 });
             }
 
@@ -121,12 +139,13 @@ impl Compete for Robot {
                 self.intake.set_voltage(0.0);
             }
 
-            if state.button_x.is_now_pressed() {
-                _ = self.grabber.toggle_extender();
-            }
+            // if state.button_x.is_now_pressed() {
+            //     _ = self.grabber.toggle_extender();
+            // }
 
             if state.button_y.is_now_pressed() {
-                self.lady_brown.set_target(LadyBrownTarget::Position(LADY_BROWN_SCORED));
+                self.lady_brown
+                    .set_target(Self::LADY_BROWN_SCORED);
             }
 
             // A to toggle mogo mech.
@@ -139,33 +158,16 @@ impl Compete for Robot {
     }
 }
 
+// MARK: Main
+
 #[vexide::main(banner(theme = THEME_WAR_EAGLE))]
 async fn main(peripherals: Peripherals) {
-    LOGGER.init(LevelFilter::Trace).unwrap();
+    SerialLogger.init(LevelFilter::Trace).unwrap();
 
     let mut display = peripherals.display;
     let mut imu = InertialSensor::new(peripherals.port_21);
 
-    info!("Calibrating IMU");
-    let imu_calibration_start = Instant::now();
-    // imu.calibrate().await.unwrap();
-    let imu_calibration_elapsed = imu_calibration_start.elapsed();
-    info!("Calibration completed in {:?}.", imu_calibration_elapsed);
-
-    display.draw_text(
-        &Text::new_aligned(
-            &format!("{:?}", imu_calibration_elapsed),
-            Font::new(FontSize::LARGE, FontFamily::Monospace),
-            Point2 {
-                x: Display::HORIZONTAL_RESOLUTION / 2,
-                y: Display::VERTICAL_RESOLUTION / 2,
-            },
-            HAlign::Center,
-            VAlign::Center,
-        ),
-        Rgb::new(255, 255, 255),
-        None,
-    );
+    calibrate_imu(&mut display, &mut imu).await;
 
     let robot = Robot {
         // Controller
@@ -214,7 +216,7 @@ async fn main(peripherals: Peripherals) {
                 Motor::new(peripherals.port_10, Gearset::Blue, Direction::Reverse),
             ],
             OpticalSensor::new(peripherals.port_5),
-            None,
+            AdiDigitalOut::new(peripherals.adi_e),
         ),
 
         // Lady Brown Arm
@@ -231,12 +233,10 @@ async fn main(peripherals: Peripherals) {
         // Mogo
         clamp: AdiDigitalOut::new(peripherals.adi_h),
 
-        grabber: Grabber::new(
-            AdiDigitalOut::new(peripherals.adi_g),
-            AdiDigitalOut::new(peripherals.adi_a),
-        ),
-
-        intake_raiser: AdiDigitalOut::new(peripherals.adi_e),
+        // Goal Rush Arms
+        left_arm: AdiDigitalOut::new(peripherals.adi_c),
+        right_arm: AdiDigitalOut::new(peripherals.adi_b),
+        pinchers: AdiDigitalOut::new(peripherals.adi_d),
     };
 
     robot.compete().await;

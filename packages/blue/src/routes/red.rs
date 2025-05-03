@@ -2,9 +2,9 @@ use core::time::Duration;
 
 use evian::{
     math::IntoAngle,
-    motion::{Basic, Seeking}, prelude::TracksPosition,
+    motion::{Basic, Seeking},
 };
-use vexide::{io::println, time::sleep};
+use vexide::time::sleep;
 
 use crate::Robot;
 

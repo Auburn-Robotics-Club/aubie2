@@ -1,5 +1,5 @@
-mod otos;
 mod encoder;
+mod calibration;
 
-pub use otos::Otos;
 pub use encoder::CustomEncoder;
+pub use calibration::calibrate_imu;

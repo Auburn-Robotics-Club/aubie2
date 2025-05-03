@@ -3,14 +3,12 @@
 
 extern crate alloc;
 
-use alloc::format;
-use core::{char::DecodeUtf16Error, time::Duration};
+use core::time::Duration;
 
 use aubie2::{
-    hardware::CustomEncoder,
+    hardware::{calibrate_imu, CustomEncoder},
     logger::SerialLogger,
     subsystems::{
-        intake::RingColor,
         lady_brown::{LadyBrown, LadyBrownTarget},
         Intake,
     },
@@ -19,14 +17,9 @@ use aubie2::{
 use evian::{
     control::loops::{AngularPid, Pid},
     prelude::*,
-    tracking::RotarySensor,
 };
 use log::{info, LevelFilter};
-use vexide::{
-    devices::display::{Font, FontFamily, FontSize, HAlign, Text, VAlign},
-    prelude::*,
-    time::Instant,
-};
+use vexide::{prelude::*, time::Instant};
 
 pub mod routes;
 
@@ -56,11 +49,11 @@ impl Robot {
         LadyBrownTarget::Position(Position::from_degrees(295.0));
     pub const LADY_BROWN_RAISED: LadyBrownTarget =
         LadyBrownTarget::Position(Position::from_degrees(269.0));
-        pub const LADY_BROWN_UP: LadyBrownTarget =
+    pub const LADY_BROWN_UP: LadyBrownTarget =
         LadyBrownTarget::Position(Position::from_degrees(170.0));
-        pub const LADY_BROWN_SCORED: LadyBrownTarget =
+    pub const LADY_BROWN_SCORED: LadyBrownTarget =
         LadyBrownTarget::Position(Position::from_degrees(140.0));
-        pub const LADY_BROWN_FLAT: LadyBrownTarget =
+    pub const LADY_BROWN_FLAT: LadyBrownTarget =
         LadyBrownTarget::Position(Position::from_degrees(90.0));
 
     // Control Loops
@@ -186,31 +179,7 @@ impl Compete for Robot {
     }
 }
 
-// MARK: Initialization
-
-async fn calibrate_sensors(display: &mut Display, imu: &mut InertialSensor) {
-    info!("Calibrating IMU");
-
-    let imu_calibration_start = Instant::now();
-    imu.calibrate().await.unwrap();
-    let imu_calibration_elapsed = imu_calibration_start.elapsed();
-    info!("Calibration completed in {:?}.", imu_calibration_elapsed);
-
-    display.draw_text(
-        &Text::new_aligned(
-            &format!("{:?}", imu_calibration_elapsed),
-            Font::new(FontSize::LARGE, FontFamily::Monospace),
-            [
-                Display::HORIZONTAL_RESOLUTION / 2,
-                Display::VERTICAL_RESOLUTION / 2,
-            ],
-            HAlign::Center,
-            VAlign::Center,
-        ),
-        Rgb::new(255, 255, 255),
-        None,
-    );
-}
+// MARK: Main
 
 #[vexide::main(banner(theme = THEME_WAR_EAGLE))]
 async fn main(peripherals: Peripherals) {
@@ -222,7 +191,7 @@ async fn main(peripherals: Peripherals) {
     let mut imu = InertialSensor::new(peripherals.port_4);
     let enc = CustomEncoder::<8192>::new(peripherals.adi_g, peripherals.adi_h);
 
-    calibrate_sensors(&mut display, &mut imu).await;
+    calibrate_imu(&mut display, &mut imu).await;
 
     let robot = Robot {
         // Controller
@@ -293,7 +262,7 @@ async fn main(peripherals: Peripherals) {
         // Goal Clamp
         clamp: AdiDigitalOut::new(peripherals.adi_a),
 
-        // Left Goal Rush Arms
+        // Goal Rush Arms
         left_arm: AdiDigitalOut::new(peripherals.adi_c),
         right_arm: AdiDigitalOut::new(peripherals.adi_b),
         pinchers: AdiDigitalOut::new(peripherals.adi_d),

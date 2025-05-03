@@ -7,4 +7,3 @@ pub mod hardware;
 pub mod logger;
 pub mod subsystems;
 pub mod theme;
-pub mod tracking;
