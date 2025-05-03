@@ -1,7 +1,5 @@
 //! Kernel Logger Implementation
 
-extern crate alloc;
-
 use core::time::Duration;
 
 use log::{max_level, set_logger, set_max_level, LevelFilter, Log, Metadata, SetLoggerError};
@@ -37,7 +35,7 @@ impl Log for SerialLogger {
             let mins = timestamp.as_secs() / 60;
             let submin_secs = timestamp.as_secs() % 60;
 
-            vexide::core::println!(
+            vexide::io::println!(
                 "{:02}:{:02}:{:02} {}[{}]\x1B[0m {}",
                 mins,
                 submin_secs,

@@ -3,7 +3,7 @@ members = ["packages/*"]
 resolver = "2"
 
 [workspace.dependencies]
-vexide = "0.6.0"
-evian = { path = "../evian" }
+vexide = "0.7.0"
+evian = { path = "../evian/packages/evian" }
 aubie2 = { path = "packages/aubie2" }
 log = "0.4.22"

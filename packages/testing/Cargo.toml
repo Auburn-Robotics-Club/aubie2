@@ -1,5 +1,5 @@
 [package]
-name = "aubie2-hardware-testing"
+name = "testing"
 version = "0.1.0"
 edition = "2021"
 
@@ -12,3 +12,4 @@ icon = "cool-x"
 aubie2 = { workspace = true }
 vexide = { workspace = true }
 evian = { workspace = true }
+vex-sdk = "0.26.0"

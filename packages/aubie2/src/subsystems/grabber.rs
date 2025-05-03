@@ -1,36 +1,36 @@
-use crate::hardware::Solenoid;
+use vexide::{devices::PortError, prelude::AdiDigitalOut};
 
-pub struct Grabber<P: Solenoid, E: Solenoid> {
-    pincher: P,
-    extender: E,
+pub struct Grabber {
+    pincher: AdiDigitalOut,
+    extender: AdiDigitalOut,
 }
 
-impl<P: Solenoid, E: Solenoid> Grabber<P, E> {
-    pub fn new(pincher: P, extender: E) -> Self {
+impl Grabber {
+    pub fn new(pincher: AdiDigitalOut, extender: AdiDigitalOut) -> Self {
         Self { pincher, extender }
     }
 
-    pub fn extend(&mut self) -> Result<(), E::Error> {
+    pub fn extend(&mut self) -> Result<(), PortError> {
         self.extender.set_high()
     }
 
-    pub fn retract(&mut self) -> Result<(), E::Error> {
+    pub fn retract(&mut self) -> Result<(), PortError> {
         self.extender.set_low()
     }
 
-    pub fn pinch(&mut self) -> Result<(), P::Error> {
+    pub fn pinch(&mut self) -> Result<(), PortError> {
         self.pincher.set_high()
     }
 
-    pub fn release(&mut self) -> Result<(), P::Error> {
+    pub fn release(&mut self) -> Result<(), PortError> {
         self.pincher.set_low()
     }
 
-    pub fn toggle_pincher(&mut self) -> Result<(), P::Error> {
+    pub fn toggle_pincher(&mut self) -> Result<(), PortError> {
         self.pincher.toggle()
     }
 
-    pub fn toggle_extender(&mut self) -> Result<(), E::Error> {
+    pub fn toggle_extender(&mut self) -> Result<(), PortError> {
         self.extender.toggle()
     }
 }

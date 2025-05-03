@@ -15,49 +15,49 @@ use aubie2::{
     },
     theme::THEME_WAR_EAGLE,
 };
-use evian::{control::Pid, prelude::*};
-use log::{error, info, LevelFilter};
+use evian::{control::loops::Pid, prelude::*};
+use log::{info, LevelFilter};
 use vexide::{
-    core::time::Instant,
     devices::{
         display::{Font, FontFamily, FontSize, HAlign, Text, VAlign},
         math::Point2,
     },
     prelude::*,
+    time::Instant,
 };
 
-pub const LADY_BROWN_LOWERED: Position = Position::from_degrees(250.0);
-pub const LADY_BROWN_RAISED: Position = Position::from_degrees(210.0);
-pub const LADY_BROWN_SCORED: Position = Position::from_degrees(85.0);
+pub const LADY_BROWN_LOWERED: Position = Position::from_degrees(190.0);
+pub const LADY_BROWN_RAISED: Position = Position::from_degrees(154.0);
+pub const LADY_BROWN_SCORED: Position = Position::from_degrees(35.0);
 
 static LOGGER: SerialLogger = SerialLogger;
 
 pub struct Robot {
     controller: Controller,
-    drivetrain: Drivetrain<Differential, ParallelWheelTracking>,
+    drivetrain: Drivetrain<Differential, WheeledTracking>,
     intake: Intake,
     lady_brown: LadyBrown,
     clamp: AdiDigitalOut,
     intake_raiser: AdiDigitalOut,
-    grabber: Grabber<AdiDigitalOut, AdiDigitalOut>,
+    grabber: Grabber,
 }
 
 impl Compete for Robot {
     async fn autonomous(&mut self) {
         let start = Instant::now();
 
-        match autons::red(self).await {
-            Ok(()) => {
-                info!("Route completed successfully in {:?}.", start.elapsed());
-            }
-            Err(err) => {
-                error!(
-                    "Route encountered error after {:?}: {}",
-                    start.elapsed(),
-                    err
-                );
-            }
-        }
+        // match autons::red(self).await {
+        //     Ok(()) => {
+        //         info!("Route completed successfully in {:?}.", start.elapsed());
+        //     }
+        //     Err(err) => {
+        //         error!(
+        //             "Route encountered error after {:?}: {}",
+        //             start.elapsed(),
+        //             err
+        //         );
+        //     }
+        // }
 
         // Dump tracking info to get ending pose of robot.
         info!(
@@ -76,14 +76,14 @@ impl Compete for Robot {
 
             // Single-stick arcade joystick control
             _ = self.drivetrain.motors.set_voltages(
-                DifferentialVoltages::from_arcade(
-                    state.left_stick.y() * Motor::V5_MAX_VOLTAGE,
+                Voltages::from_arcade(
                     state.left_stick.x() * Motor::V5_MAX_VOLTAGE,
+                    state.left_stick.y() * Motor::V5_MAX_VOLTAGE,
                 )
                 .normalized(Motor::V5_MAX_VOLTAGE),
             );
 
-            // Raise/slower ladybrown when B is pressed.
+            // Raise/lower ladybrown when B is pressed.
             if state.button_b.is_now_pressed() {
                 self.lady_brown.set_target(match self.lady_brown.target() {
                     LadyBrownTarget::Position(state) => match state {
@@ -126,7 +126,7 @@ impl Compete for Robot {
             }
 
             if state.button_y.is_now_pressed() {
-                _ = self.grabber.toggle_pincher();
+                self.lady_brown.set_target(LadyBrownTarget::Position(LADY_BROWN_SCORED));
             }
 
             // A to toggle mogo mech.
@@ -144,11 +144,11 @@ async fn main(peripherals: Peripherals) {
     LOGGER.init(LevelFilter::Trace).unwrap();
 
     let mut display = peripherals.display;
-    let mut imu = InertialSensor::new(peripherals.port_12);
+    let mut imu = InertialSensor::new(peripherals.port_21);
 
     info!("Calibrating IMU");
     let imu_calibration_start = Instant::now();
-    imu.calibrate().await.unwrap();
+    // imu.calibrate().await.unwrap();
     let imu_calibration_elapsed = imu_calibration_start.elapsed();
     info!("Calibration completed in {:?}.", imu_calibration_elapsed);
 
@@ -175,26 +175,28 @@ async fn main(peripherals: Peripherals) {
         drivetrain: {
             // Left/right motors shared between drivetrain and odometry.
             let left_motors = shared_motors![
-                Motor::new(peripherals.port_7, Gearset::Blue, Direction::Reverse),
-                Motor::new(peripherals.port_8, Gearset::Blue, Direction::Reverse),
-                Motor::new(peripherals.port_9, Gearset::Blue, Direction::Forward),
-                Motor::new(peripherals.port_10, Gearset::Blue, Direction::Reverse),
+                Motor::new(peripherals.port_11, Gearset::Blue, Direction::Forward),
+                Motor::new(peripherals.port_12, Gearset::Blue, Direction::Reverse),
+                Motor::new(peripherals.port_13, Gearset::Blue, Direction::Forward),
+                Motor::new(peripherals.port_14, Gearset::Blue, Direction::Reverse),
             ];
             let right_motors = shared_motors![
-                Motor::new(peripherals.port_1, Gearset::Blue, Direction::Forward),
-                Motor::new(peripherals.port_2, Gearset::Blue, Direction::Forward),
-                Motor::new(peripherals.port_3, Gearset::Blue, Direction::Forward),
-                Motor::new(peripherals.port_4, Gearset::Blue, Direction::Reverse),
+                Motor::new(peripherals.port_17, Gearset::Blue, Direction::Reverse),
+                Motor::new(peripherals.port_18, Gearset::Blue, Direction::Forward),
+                Motor::new(peripherals.port_19, Gearset::Blue, Direction::Reverse),
+                Motor::new(peripherals.port_20, Gearset::Blue, Direction::Forward),
             ];
 
             // Drivetrain Model
             Drivetrain::new(
-                Differential::new(left_motors.clone(), right_motors.clone()),
-                ParallelWheelTracking::new(
+                Differential::from_shared(left_motors.clone(), right_motors.clone()),
+                WheeledTracking::forward_only(
                     Vec2::new(0.0, 0.0),
                     270.0.deg(),
-                    TrackingWheel::new(left_motors.clone(), 3.25, 5.75, Some(36.0 / 48.0)),
-                    TrackingWheel::new(right_motors.clone(), 3.25, 5.75, Some(36.0 / 48.0)),
+                    [
+                        TrackingWheel::new(left_motors.clone(), 3.25, -5.75, Some(36.0 / 48.0)),
+                        TrackingWheel::new(right_motors.clone(), 3.25, 5.75, Some(36.0 / 48.0)),
+                    ],
                     Some(imu),
                 ),
             )
@@ -203,27 +205,27 @@ async fn main(peripherals: Peripherals) {
         // Intake
         intake: Intake::new(
             [Motor::new(
-                peripherals.port_13,
+                peripherals.port_15,
                 Gearset::Blue,
-                Direction::Reverse,
+                Direction::Forward,
             )],
             [
-                Motor::new(peripherals.port_6, Gearset::Blue, Direction::Forward),
-                Motor::new(peripherals.port_19, Gearset::Blue, Direction::Reverse),
+                Motor::new(peripherals.port_1, Gearset::Blue, Direction::Forward),
+                Motor::new(peripherals.port_10, Gearset::Blue, Direction::Reverse),
             ],
-            OpticalSensor::new(peripherals.port_21),
+            OpticalSensor::new(peripherals.port_5),
             None,
         ),
 
         // Lady Brown Arm
         lady_brown: LadyBrown::new(
-            [
-                Motor::new(peripherals.port_14, Gearset::Green, Direction::Forward),
-                Motor::new(peripherals.port_16, Gearset::Green, Direction::Reverse),
-            ],
-            RotationSensor::new(peripherals.port_18, Direction::Forward),
-            Pid::new(0.3, 0.0, 0.003, None),
-            Position::from_degrees(0.0),
+            [Motor::new(
+                peripherals.port_2,
+                Gearset::Green,
+                Direction::Reverse,
+            )],
+            RotationSensor::new(peripherals.port_8, Direction::Forward),
+            Pid::new(0.19, 0.0, 0.01, None),
         ),
 
         // Mogo

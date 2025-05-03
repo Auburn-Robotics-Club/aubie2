@@ -1,5 +1,5 @@
-mod solenoid;
-mod switch_board;
+mod otos;
+mod encoder;
 
-pub use solenoid::Solenoid;
-pub use switch_board::{SolenoidSwitch, SwitchBoard};
+pub use otos::Otos;
+pub use encoder::CustomEncoder;

@@ -9,8 +9,9 @@ use core::{
 
 use log::info;
 use vexide::{
-    core::time::Instant,
-    prelude::{sleep, spawn, BrakeMode, Motor, OpticalSensor, SmartDevice, Task},
+    time::Instant,
+    devices::PortError,
+    prelude::{sleep, spawn, AdiDigitalOut, BrakeMode, Motor, OpticalSensor, SmartDevice, Task},
 };
 
 /// Intake Rejection Color
@@ -26,6 +27,7 @@ pub enum RingColor {
 /// Ring intake with color sorting capabilities.
 pub struct Intake {
     _task: Task<()>,
+    raiser: AdiDigitalOut,
     top_voltage: Arc<AtomicI32>,
     bottom_voltage: Arc<AtomicI32>,
     reject_color: Rc<RefCell<Option<RingColor>>>,
@@ -36,16 +38,17 @@ impl Intake {
         mut bottom_motors: [Motor; TOP_COUNT],
         mut top_motors: [Motor; BOTTOM_COUNT],
         mut optical: OpticalSensor,
-        reject_color: Option<RingColor>,
+        raiser: AdiDigitalOut,
     ) -> Self {
         let top_voltage = Arc::new(AtomicI32::new(0));
         let bottom_voltage = Arc::new(AtomicI32::new(0));
-        let reject_color = Rc::new(RefCell::new(reject_color));
+        let reject_color = Rc::new(RefCell::new(None));
 
         Self {
             top_voltage: top_voltage.clone(),
             bottom_voltage: bottom_voltage.clone(),
             reject_color: reject_color.clone(),
+            raiser,
             _task: spawn(async move {
                 _ = optical.set_integration_time(Duration::from_millis(4));
                 // _ = optical.set_led_brightness(1.0);
@@ -73,12 +76,11 @@ impl Intake {
 
                         if in_prox {
                             if let Ok(hue) = optical.hue() {
-                                log::debug!("Hue in proximity: {}", hue);
                                 let matches_bad_ring_color = in_prox
                                     && match reject_color {
                                         RingColor::Blue => (55.0..250.0).contains(&hue),
                                         RingColor::Red => {
-                                            (0.0..40.0).contains(&hue)
+                                            (10.0..40.0).contains(&hue)
                                                 || (338.0..360.0).contains(&hue)
                                         }
                                     };
@@ -95,7 +97,7 @@ impl Intake {
                     let reject_elapsed = reject_timestamp.elapsed();
 
                     if rejecting
-                        && reject_elapsed > Duration::from_millis(50)
+                        && reject_elapsed > Duration::from_millis(150)
                         && reject_elapsed < Duration::from_millis(300)
                     {
                         if top_voltage > 0.0 {
@@ -138,5 +140,13 @@ impl Intake {
 
     pub fn set_reject_color(&mut self, reject_color: Option<RingColor>) {
         *self.reject_color.borrow_mut() = reject_color;
+    }
+
+    pub fn raise(&mut self) -> Result<(), PortError> {
+        self.raiser.set_high()
+    }
+
+    pub fn lower(&mut self) -> Result<(), PortError> {
+        self.raiser.set_low()
     }
 }
