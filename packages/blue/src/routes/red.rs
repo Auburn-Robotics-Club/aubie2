@@ -144,7 +144,7 @@ impl Robot {
         self.intake.set_top_voltage(-1.0);
 
         seeking
-            .move_to_point(dt, (29.0, -15.0))
+            .move_to_point(dt, (29.0, -14.0))
             .reverse()
             .with_tolerance_duration(Duration::from_millis(50))
             .await;
