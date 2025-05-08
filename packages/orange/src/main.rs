@@ -48,7 +48,7 @@ impl Robot {
     pub const LADY_BROWN_LOWERED: LadyBrownTarget =
         LadyBrownTarget::Position(Position::from_degrees(190.0));
     pub const LADY_BROWN_RAISED: LadyBrownTarget =
-        LadyBrownTarget::Position(Position::from_degrees(150.0));
+        LadyBrownTarget::Position(Position::from_degrees(155.0));
     pub const LADY_BROWN_UP: LadyBrownTarget =
         LadyBrownTarget::Position(Position::from_degrees(35.0));
     pub const LADY_BROWN_SCORED: LadyBrownTarget =
@@ -79,7 +79,7 @@ impl Compete for Robot {
     async fn autonomous(&mut self) {
         let start = Instant::now();
 
-        self.blue().await;
+        self.blue_rush().await;
 
         info!("Route completed successfully in {:?}.", start.elapsed());
         info!(

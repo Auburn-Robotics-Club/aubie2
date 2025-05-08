@@ -103,15 +103,19 @@ impl Robot {
         sleep(Duration::from_millis(800)).await;
 
         basic.drive_distance(dt, -14.0).await;
+        _ = self.intake.raise();
         basic.drive_distance(dt, 12.0).await;
         self.intake.set_bottom_voltage(0.0);
 
         // Clear corner
-        basic.drive_distance(dt, -5.0).await;
-        _ = self.left_arm.set_high();
-        sleep(Duration::from_millis(500)).await;
+        _ = self.intake.lower();
+        self.intake.set_voltage(-1.0);
+        basic.drive_distance(dt, -8.0).await;
+        basic.turn_to_heading(dt, 270.0.deg()).await;
+        _ = self.right_arm.set_high();
+        sleep(Duration::from_millis(800)).await;
         basic
-            .drive_distance_at_heading(dt, -4.0, 145.0.deg())
+            .drive_distance_at_heading(dt, 5.0, 145.0.deg())
             .without_tolerance_duration()
             .await;
 
