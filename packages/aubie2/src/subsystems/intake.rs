@@ -9,9 +9,9 @@ use core::{
 
 use log::info;
 use vexide::{
-    time::Instant,
     devices::PortError,
     prelude::{sleep, spawn, AdiDigitalOut, BrakeMode, Motor, OpticalSensor, SmartDevice, Task},
+    time::Instant,
 };
 
 /// Intake Rejection Color
@@ -27,7 +27,7 @@ pub enum RingColor {
 /// Ring intake with color sorting capabilities.
 pub struct Intake {
     _task: Task<()>,
-    raiser: AdiDigitalOut,
+    pub raiser: AdiDigitalOut,
     top_voltage: Arc<AtomicI32>,
     bottom_voltage: Arc<AtomicI32>,
     reject_color: Rc<RefCell<Option<RingColor>>>,
@@ -148,5 +148,9 @@ impl Intake {
 
     pub fn lower(&mut self) -> Result<(), PortError> {
         self.raiser.set_low()
+    }
+
+    pub fn is_raised(&mut self) -> Result<bool, PortError> {
+        self.raiser.is_high()
     }
 }

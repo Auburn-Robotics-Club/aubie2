@@ -91,6 +91,10 @@ impl Compete for Robot {
     }
 
     async fn driver(&mut self) {
+        if self.intake.is_raised().unwrap_or(true) {
+            _ = self.intake.lower();
+        }
+
         loop {
             let state = self.controller.state().unwrap_or_default();
 
@@ -122,11 +126,7 @@ impl Compete for Robot {
             // R2: Toggle score/raise
             let lady_brown_target = self.lady_brown.target();
             if state.button_r2.is_now_pressed() {
-                self.lady_brown.set_target(match lady_brown_target {
-                    Self::LADY_BROWN_LOWERED => Self::LADY_BROWN_RAISED,
-                    LadyBrownTarget::Manual(_) => Self::LADY_BROWN_RAISED,
-                    _ => Self::LADY_BROWN_LOWERED,
-                });
+                self.lady_brown.set_target(Self::LADY_BROWN_LOWERED);
             } else if state.button_r1.is_now_pressed() {
                 self.lady_brown.set_target(match lady_brown_target {
                     Self::LADY_BROWN_RAISED => Self::LADY_BROWN_SCORED,
@@ -174,6 +174,12 @@ impl Compete for Robot {
                 _ = self.clamp.toggle();
             }
 
+            // Hero's Journey
+            if state.button_x.is_now_pressed() {
+                _ = self.left_arm.toggle();
+                _ = self.right_arm.toggle();
+            }
+
             sleep(Motor::UPDATE_INTERVAL).await;
         }
     }
@@ -187,15 +193,16 @@ async fn main(peripherals: Peripherals) {
 
     // Solenoids: port_5
 
+    let mut controller = peripherals.primary_controller;
     let mut display = peripherals.display;
     let mut imu = InertialSensor::new(peripherals.port_4);
-    let enc = CustomEncoder::<8192>::new(peripherals.adi_g, peripherals.adi_h);
+    let enc = CustomEncoder::<8192>::new(peripherals.adi_g, peripherals.adi_h, Direction::Forward);
 
-    calibrate_imu(&mut display, &mut imu).await;
+    calibrate_imu(&mut controller, &mut display, &mut imu).await;
 
     let robot = Robot {
         // Controller
-        controller: peripherals.primary_controller,
+        controller,
 
         // Drivetrain & Localization
         drivetrain: {

@@ -1,5 +1,5 @@
-mod encoder;
 mod calibration;
+mod encoder;
 
-pub use encoder::CustomEncoder;
 pub use calibration::calibrate_imu;
+pub use encoder::CustomEncoder;

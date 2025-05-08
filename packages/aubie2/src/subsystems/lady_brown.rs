@@ -52,10 +52,10 @@ impl LadyBrown {
                             for motor in motors.iter_mut() {
                                 _ = motor.set_target(motor_target);
                             }
-                        },
+                        }
                         Err(err) => {
                             warn!("{err}");
-                        },
+                        }
                     }
 
                     sleep(Duration::from_millis(5)).await;

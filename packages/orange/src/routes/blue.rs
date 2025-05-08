@@ -1,0 +1,134 @@
+use core::time::Duration;
+
+use evian::{
+    math::IntoAngle,
+    motion::{Basic, Seeking},
+};
+use vexide::time::sleep;
+
+use crate::Robot;
+
+impl Robot {
+    pub async fn blue(&mut self) {
+        self.drivetrain.tracking.set_heading(326.0.deg());
+
+        let dt = &mut self.drivetrain;
+        let mut basic = Basic {
+            linear_controller: Robot::LINEAR_PID,
+            angular_controller: Robot::ANGUALR_PID,
+            linear_tolerances: Robot::LINEAR_TOLERANCES,
+            angular_tolerances: Robot::ANGULAR_TOLERANCES,
+            timeout: Some(Duration::from_secs(5)),
+        };
+        let mut seeking = Seeking {
+            linear_controller: Robot::LINEAR_PID,
+            angular_controller: Robot::ANGUALR_PID,
+            tolerances: Robot::LINEAR_TOLERANCES,
+            timeout: Some(Duration::from_secs(5)),
+        };
+
+        // Alliance stake
+        self.lady_brown.set_target(Self::LADY_BROWN_RAISED);
+        sleep(Duration::from_millis(250)).await;
+        self.intake.set_top_voltage(12.0);
+        sleep(Duration::from_millis(800)).await;
+
+        self.intake.set_top_voltage(-3.0);
+        sleep(Duration::from_millis(250)).await;
+
+        self.lady_brown.set_target(Self::LADY_BROWN_FLAT);
+        self.intake.set_top_voltage(0.0);
+        sleep(Duration::from_millis(1000)).await;
+
+        // Goal
+        seeking.move_to_point(dt, (-15.5, 10.0)).reverse().await;
+        self.lady_brown.set_target(Self::LADY_BROWN_LOWERED);
+
+        basic.turn_to_heading(dt, 180.0.deg()).await;
+        basic
+            .drive_distance_at_heading(dt, -26.0, 180.0.deg())
+            .with_linear_output_limit(4.0)
+            .await;
+        _ = self.clamp.set_high();
+
+        sleep(Duration::from_millis(500)).await;
+
+        // First stack
+        self.intake.set_voltage(12.0);
+        seeking.move_to_point(dt, (-31.0, 11.0)).await;
+        sleep(Duration::from_millis(350)).await;
+
+        // Second stack
+        _ = self.intake.raise();
+
+        basic.turn_to_heading(dt, 110.0.deg()).await;
+        seeking.move_to_point(dt, (-33.0, 28.0)).await;
+        sleep(Duration::from_millis(500)).await;
+
+        // Clear bottom of stack.
+        basic.drive_distance(dt, -5.0).await;
+
+        basic
+            .turn_to_heading(dt, 145.0.deg())
+            .without_tolerance_duration()
+            .await;
+        basic.drive_distance_at_heading(dt, 15.0, 145.0.deg()).await;
+
+        basic
+            .turn_to_heading(dt, 93.0.deg())
+            .without_tolerance_duration()
+            .await;
+
+        // Stack at line
+        seeking.move_to_point(dt, (-45.0, 45.5)).await;
+        sleep(Duration::from_millis(1000)).await;
+        _ = self.intake.lower();
+        sleep(Duration::from_millis(250)).await;
+
+        // Final
+        basic
+            .drive_distance_at_heading(dt, -34.0, 135.0.deg())
+            .await;
+        // seeking
+        //     .move_to_point(dt, (-32.0, 14.0))
+        //     .reverse()
+        //     .await;
+        basic.turn_to_heading(dt, 225.0.deg()).await;
+        seeking
+            .move_to_point(dt, (-46.0, -7.0))
+            .with_linear_output_limit(4.0)
+            .with_timeout(Duration::from_secs_f64(2.5))
+            .await;
+        self.intake.set_voltage(12.0);
+        sleep(Duration::from_millis(800)).await;
+
+        basic.drive_distance(dt, -14.0).await;
+        basic.drive_distance(dt, 12.0).await;
+        self.intake.set_bottom_voltage(0.0);
+
+        // Clear corner
+        basic.drive_distance(dt, -5.0).await;
+        _ = self.left_arm.set_high();
+        sleep(Duration::from_millis(500)).await;
+        basic
+            .drive_distance_at_heading(dt, -4.0, 145.0.deg())
+            .without_tolerance_duration()
+            .await;
+
+        // Drop goal
+        self.intake.set_voltage(-1.5);
+        basic.turn_to_heading(dt, 45.0.deg()).await;
+        basic.drive_distance_at_heading(dt, -16.0, 45.0.deg()).await;
+        self.intake.set_voltage(0.0);
+        _ = self.clamp.set_low();
+        _ = self.left_arm.set_low();
+        basic
+            .drive_distance_at_heading(dt, -4.0, 45.0.deg())
+            .with_linear_output_limit(4.0)
+            .await;
+
+        // Touch
+        basic.drive_distance_at_heading(dt, 52.0, 45.0.deg()).await;
+        self.lady_brown.set_target(Self::LADY_BROWN_FLAT);
+    }
+}

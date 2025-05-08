@@ -3,17 +3,26 @@ use alloc::format;
 use log::info;
 use vexide::{
     devices::display::{Font, FontFamily, FontSize, HAlign, Text, VAlign},
-    prelude::{Display, InertialSensor, Rgb},
+    prelude::{Controller, Display, InertialSensor, Rgb},
     time::Instant,
 };
 
-pub async fn calibrate_imu(display: &mut Display, imu: &mut InertialSensor) {
+pub async fn calibrate_imu(
+    controller: &mut Controller,
+    display: &mut Display,
+    imu: &mut InertialSensor,
+) {
     info!("Calibrating IMU");
 
     let imu_calibration_start = Instant::now();
     imu.calibrate().await.unwrap();
     let imu_calibration_elapsed = imu_calibration_start.elapsed();
+
     info!("Calibration completed in {:?}.", imu_calibration_elapsed);
+
+    _ = controller
+        .screen
+        .try_set_text(format!("{:?}", imu_calibration_elapsed), 1, 1);
 
     display.draw_text(
         &Text::new_aligned(
