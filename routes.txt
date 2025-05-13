@@ -1,0 +1,10 @@
+RED:
+
+RUSTFLAGS="--cfg route=\"red\"" cargo v5 run --slot=1 --name="aubie2-red-safe" -p orange --release
+RUSTFLAGS="--cfg route=\"blue\"" cargo v5 run --slot=2 --name="aubie2-blue-safe" -p orange --release
+RUSTFLAGS="--cfg route=\"red_rush\"" cargo v5 run --slot=3 --name="aubie2-red-rush" -p orange --release
+
+BLUE:
+
+RUSTFLAGS="--cfg route=\"red\"" cargo v5 run --slot=1 --name="aubie2-red" -p blue --release
+RUSTFLAGS="--cfg route=\"blue\"" cargo v5 run --slot=2 --name="aubie2-blue" -p blue --release

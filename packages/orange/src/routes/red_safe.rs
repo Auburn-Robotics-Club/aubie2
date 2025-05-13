@@ -8,9 +8,11 @@ use vexide::time::sleep;
 
 use crate::Robot;
 
+// practice: good
 impl Robot {
     pub async fn red(&mut self) {
         self.drivetrain.tracking.set_heading(214.0.deg());
+        self.intake.enable_jam_prevention();
 
         let dt = &mut self.drivetrain;
         let mut basic = Basic {
@@ -28,10 +30,11 @@ impl Robot {
         };
 
         // Alliance stake
+        self.intake.disable_jam_prevention();
         self.lady_brown.set_target(Self::LADY_BROWN_RAISED);
-        sleep(Duration::from_millis(250)).await;
+        sleep(Duration::from_millis(350)).await;
         self.intake.set_top_voltage(12.0);
-        sleep(Duration::from_millis(800)).await;
+        sleep(Duration::from_millis(950)).await;
 
         self.intake.set_top_voltage(-3.0);
         sleep(Duration::from_millis(250)).await;
@@ -43,6 +46,7 @@ impl Robot {
         // Goal
         seeking.move_to_point(dt, (16.0, 10.0)).reverse().await;
         self.lady_brown.set_target(Self::LADY_BROWN_LOWERED);
+        self.intake.enable_jam_prevention();
 
         basic.turn_to_heading(dt, 0.0.deg()).await;
         basic
@@ -72,7 +76,7 @@ impl Robot {
             .turn_to_heading(dt, 35.0.deg())
             .without_tolerance_duration()
             .await;
-        basic.drive_distance_at_heading(dt, 18.0, 35.0.deg()).await;
+        basic.drive_distance_at_heading(dt, 17.0, 35.0.deg()).await;
 
         basic
             .turn_to_heading(dt, 87.0.deg())
@@ -85,14 +89,15 @@ impl Robot {
         sleep(Duration::from_millis(1000)).await;
 
         // Final
-        basic.drive_distance_at_heading(dt, -38.0, 45.0.deg()).await;
+        basic.drive_distance_at_heading(dt, -39.0, 45.0.deg()).await;
         // seeking
         //     .move_to_point(dt, (-32.0, 14.0))
         //     .reverse()
         //     .await;
         basic.turn_to_heading(dt, 315.0.deg()).await;
+        self.lady_brown.set_target(Self::LADY_BROWN_FLAT);
         seeking
-            .move_to_point(dt, (46.0, -7.0))
+            .move_to_point(dt, (46.0, -9.5))
             .with_linear_output_limit(4.0)
             .with_timeout(Duration::from_secs_f64(2.5))
             .await;
@@ -102,7 +107,9 @@ impl Robot {
         basic.drive_distance(dt, -14.0).await;
         _ = self.intake.raise();
         basic.drive_distance(dt, 12.0).await;
+        sleep(Duration::from_millis(800)).await;
         self.intake.set_bottom_voltage(0.0);
+        self.lady_brown.set_target(Self::LADY_BROWN_LOWERED);
 
         // Clear corner
         _ = self.intake.lower();
@@ -120,11 +127,12 @@ impl Robot {
         self.intake.set_voltage(-1.5);
         basic.turn_to_heading(dt, 135.0.deg()).await;
         basic
-            .drive_distance_at_heading(dt, -16.0, 135.0.deg())
+            .drive_distance_at_heading(dt, -13.0, 135.0.deg())
+            .with_timeout(Duration::from_millis(800))
             .await;
         self.intake.set_voltage(0.0);
         _ = self.clamp.set_low();
-        _ = self.right_arm.set_low();
+        _ = self.left_arm.set_low();
         basic
             .drive_distance_at_heading(dt, -4.0, 135.0.deg())
             .with_linear_output_limit(4.0)

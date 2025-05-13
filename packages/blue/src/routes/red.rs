@@ -8,6 +8,7 @@ use vexide::time::sleep;
 
 use crate::Robot;
 
+// practice: 
 impl Robot {
     pub async fn red(&mut self) {
         self.drivetrain.tracking.set_heading(120.0.deg());
@@ -38,7 +39,7 @@ impl Robot {
 
         // Drag back, unpinch.
         basic
-            .drive_distance_at_heading(dt, -24.0, 75.0.deg())
+            .drive_distance_at_heading(dt, -24.0, 70.0.deg())
             .with_timeout(Duration::from_secs_f64(1.5))
             .await;
         _ = self.pinchers.set_low();
@@ -70,7 +71,7 @@ impl Robot {
         _ = self.intake.raise();
 
         basic.turn_to_heading(dt, 200.0.deg()).await;
-        seeking.move_to_point(dt, (-19.0, 15.0)).await;
+        seeking.move_to_point(dt, (-19.5, 15.0)).await;
 
         _ = self.intake.lower();
         basic.drive_distance(dt, -8.0).await;
@@ -78,7 +79,7 @@ impl Robot {
         // Final Path
         basic.turn_to_heading(dt, 315.0.deg()).await;
         self.intake.set_bottom_voltage(-12.0); // avoid intaking blue ring
-        seeking.move_to_point(dt, (-1.0, 9.0)).await;
+        seeking.move_to_point(dt, (1.0, 11.0)).await;
 
         basic.turn_to_heading(dt, 225.0.deg()).await;
         self.intake.set_bottom_voltage(12.0);
@@ -109,6 +110,7 @@ impl Robot {
         self.intake.set_voltage(0.0);
 
         // Corner
+        self.lady_brown.set_target(Self::LADY_BROWN_FLAT);
         seeking
             .move_to_point(dt, (-34.0, -29.0))
             .with_linear_output_limit(4.0)
@@ -122,18 +124,22 @@ impl Robot {
         basic.drive_distance(dt, 13.0)
             .with_linear_output_limit(6.0).await;
         basic.drive_distance(dt, -15.0).await;
+        self.intake.set_voltage(-1.0);
+        self.lady_brown.set_target(Self::LADY_BROWN_LOWERED);
 
         // Alliance stake
         basic.turn_to_heading(dt, 0.0.deg()).await;
+        self.intake.set_voltage(12.0);
 
         futures::join!(
             async {
                 sleep(Duration::from_millis(800)).await;
+                self.intake.disable_jam_prevention();
                 self.lady_brown.set_target(Self::LADY_BROWN_RAISED);
             },
             async {
                 seeking
-                    .move_to_point(dt, (30.0, -18.0))
+                    .move_to_point(dt, (31.0, -18.0))
                     .with_linear_output_limit(6.0)
                     .await;
             }
@@ -143,8 +149,9 @@ impl Robot {
         sleep(Duration::from_millis(500)).await;
         self.intake.set_top_voltage(-1.0);
 
+        // darts
         seeking
-            .move_to_point(dt, (29.0, -14.0))
+            .move_to_point(dt, (31.0, -15.0))
             .reverse()
             .with_tolerance_duration(Duration::from_millis(50))
             .await;

@@ -11,6 +11,7 @@ use crate::Robot;
 impl Robot {
     pub async fn red_rush(&mut self) {
         self.drivetrain.tracking.set_heading(78.0.deg());
+        self.intake.enable_jam_prevention();
 
         let dt = &mut self.drivetrain;
         let mut basic = Basic {
@@ -74,10 +75,10 @@ impl Robot {
         // Stack at line
         basic.drive_distance_at_heading(dt, -9.0, 45.0.deg()).await;
         _ = self.intake.lower();
-        basic.drive_distance_at_heading(dt, 22.0, 45.0.deg()).await;
+        basic.drive_distance_at_heading(dt, 21.0, 45.0.deg()).await;
 
         basic.turn_to_heading(dt, 90.0.deg()).await;
-        seeking.move_to_point(dt, (31.0, 37.0)).await;
+        seeking.move_to_point(dt, (31.0, 38.0)).await;
 
         sleep(Duration::from_millis(1000)).await;
 
@@ -85,6 +86,7 @@ impl Robot {
         basic.drive_distance_at_heading(dt, -35.0, 45.0.deg()).await;
         basic.turn_to_heading(dt, 315.0.deg()).await;
 
+        self.lady_brown.set_target(Self::LADY_BROWN_FLAT);
         seeking
             .move_to_point(dt, (33.0, -11.0))
             .with_linear_output_limit(4.0)
@@ -99,10 +101,10 @@ impl Robot {
             .drive_distance(dt, 12.0)
             .with_linear_output_limit(4.0)
             .await;
-        sleep(Duration::from_millis(200)).await;
         _ = self.intake.lower();
         sleep(Duration::from_millis(600)).await;
-        
+        self.lady_brown.set_target(Self::LADY_BROWN_LOWERED);
+
         // Clear corner
         _ = self.intake.lower();
         self.intake.set_voltage(-1.0);
@@ -120,10 +122,11 @@ impl Robot {
         basic.turn_to_heading(dt, 135.0.deg()).await;
         basic
             .drive_distance_at_heading(dt, -16.0, 135.0.deg())
+            .with_timeout(Duration::from_millis(800))
             .await;
         self.intake.set_voltage(0.0);
         _ = self.clamp.set_low();
-        _ = self.right_arm.set_low();
+        _ = self.left_arm.set_low();
         basic
             .drive_distance_at_heading(dt, -4.0, 135.0.deg())
             .with_linear_output_limit(4.0)

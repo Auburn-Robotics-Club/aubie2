@@ -3,15 +3,13 @@ extern crate alloc;
 use alloc::{rc::Rc, sync::Arc};
 use core::{
     cell::RefCell,
-    sync::atomic::{AtomicI32, Ordering},
+    sync::atomic::{AtomicBool, AtomicI32, Ordering},
     time::Duration,
 };
 
 use log::info;
 use vexide::{
-    devices::PortError,
-    prelude::{sleep, spawn, AdiDigitalOut, BrakeMode, Motor, OpticalSensor, SmartDevice, Task},
-    time::Instant,
+    devices::PortError, io::println, prelude::{sleep, spawn, AdiDigitalOut, BrakeMode, Motor, OpticalSensor, SmartDevice, Task}, time::Instant
 };
 
 /// Intake Rejection Color
@@ -28,6 +26,7 @@ pub enum RingColor {
 pub struct Intake {
     _task: Task<()>,
     pub raiser: AdiDigitalOut,
+    enable_jam: Arc<AtomicBool>,
     top_voltage: Arc<AtomicI32>,
     bottom_voltage: Arc<AtomicI32>,
     reject_color: Rc<RefCell<Option<RingColor>>>,
@@ -43,11 +42,13 @@ impl Intake {
         let top_voltage = Arc::new(AtomicI32::new(0));
         let bottom_voltage = Arc::new(AtomicI32::new(0));
         let reject_color = Rc::new(RefCell::new(None));
+        let enable_jam = Arc::new(AtomicBool::new(false));
 
         Self {
             top_voltage: top_voltage.clone(),
             bottom_voltage: bottom_voltage.clone(),
             reject_color: reject_color.clone(),
+            enable_jam: enable_jam.clone(),
             raiser,
             _task: spawn(async move {
                 _ = optical.set_integration_time(Duration::from_millis(4));
@@ -57,6 +58,9 @@ impl Intake {
                 let mut reject_timestamp = Instant::now();
                 let mut prox_timestamp = Instant::now();
                 let mut in_prox = false;
+
+                let mut jam_timestamp = Instant::now();
+                let mut jammed = false;
 
                 loop {
                     let top_voltage = top_voltage.load(Ordering::Acquire) as f64;
@@ -115,6 +119,40 @@ impl Intake {
                         }
                     }
 
+                    if enable_jam.load(Ordering::Acquire) {
+                        let avg_top_torque = {
+                            let mut sum = 0.0;
+                            let mut total = 0;
+        
+                            for motor in &top_motors {
+                                if let Ok(torque) = motor.torque() {
+                                    sum += torque;
+                                    total += 1;
+                                }
+                            }
+        
+                            if total > 0 {
+                                sum / (total as f64)
+                            } else {
+                                0.0
+                            }
+                        };
+    
+                        if !jammed && avg_top_torque < 0.25 {
+                            jam_timestamp = Instant::now();
+                        } else if jammed {
+                            for motor in top_motors.iter_mut() {
+                                _ = motor.set_voltage(-12.0);
+                            }
+                        }
+    
+                        if !jammed && jam_timestamp.elapsed() > Duration::from_millis(500) {
+                            jammed = true;
+                        } else if jammed && jam_timestamp.elapsed() > Duration::from_millis(1000) {
+                            jammed = false;
+                        }
+                    }
+
                     for motor in bottom_motors.iter_mut() {
                         _ = motor.set_voltage(bottom_voltage);
                     }
@@ -152,5 +190,13 @@ impl Intake {
 
     pub fn is_raised(&mut self) -> Result<bool, PortError> {
         self.raiser.is_high()
+    }
+
+    pub fn enable_jam_prevention(&mut self) {
+        self.enable_jam.store(true, Ordering::Release);
+    }
+
+    pub fn disable_jam_prevention(&mut self) {
+        self.enable_jam.store(false, Ordering::Release);
     }
 }

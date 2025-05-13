@@ -13,3 +13,8 @@ aubie2 = { workspace = true }
 vexide = { workspace = true }
 evian = { workspace = true }
 log = { workspace = true }
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = [
+    'cfg(route, values("blue", "red", "blue_rush", "red_rush", "skills"))',
+] }

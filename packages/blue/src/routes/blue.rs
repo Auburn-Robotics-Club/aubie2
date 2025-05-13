@@ -8,10 +8,11 @@ use vexide::time::sleep;
 
 use crate::Robot;
 
+// PRACTICE: 
 impl Robot {
     pub async fn blue(&mut self) {
         self.drivetrain.tracking.set_heading(60.0.deg());
-        // self.intake.set_reject_color(Some(RingColor::Red));
+        self.intake.enable_jam_prevention();
 
         let dt = &mut self.drivetrain;
         let mut basic = Basic {
@@ -107,6 +108,7 @@ impl Robot {
         self.intake.set_voltage(0.0);
 
         // Corner
+        self.lady_brown.set_target(Self::LADY_BROWN_FLAT);
         seeking
             .move_to_point(dt, (36.0, -27.0))
             .with_linear_output_limit(4.0)
@@ -120,18 +122,22 @@ impl Robot {
         basic.drive_distance(dt, 13.0)
             .with_linear_output_limit(6.0).await;
         basic.drive_distance(dt, -15.0).await;
+        self.intake.set_voltage(-1.0);
+        self.lady_brown.set_target(Self::LADY_BROWN_LOWERED);
 
         // Alliance stake
         basic.turn_to_heading(dt, 180.0.deg()).await;
+        self.intake.set_voltage(12.0);
 
         futures::join!(
             async {
                 sleep(Duration::from_millis(800)).await;
+                self.intake.disable_jam_prevention();
                 self.lady_brown.set_target(Self::LADY_BROWN_RAISED);
             },
             async {
                 seeking
-                    .move_to_point(dt, (-30.0, -22.0))
+                    .move_to_point(dt, (-30.0, -21.0))
                     .with_linear_output_limit(6.0)
                     .await;
             }
@@ -141,21 +147,12 @@ impl Robot {
         sleep(Duration::from_millis(500)).await;
         self.intake.set_top_voltage(-1.0);
 
+        // darts
         seeking
-            .move_to_point(dt, (-30.0, -19.5))
+            .move_to_point(dt, (-32.5, -16.0))
             .reverse()
             .with_tolerance_duration(Duration::from_millis(50))
             .await;
-
-        self.lady_brown.set_target(Self::LADY_BROWN_FLAT);
-        sleep(Duration::from_secs(1)).await;
-
-        // Go touch
-        basic.drive_distance(dt, -10.0).await;
-        self.lady_brown.set_target(Self::LADY_BROWN_UP);
-
-        basic.turn_to_heading(dt, 90.0.deg()).await;
-        basic.drive_distance(dt, 12.0).await;
 
         self.lady_brown.set_target(Self::LADY_BROWN_FLAT);
     }

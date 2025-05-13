@@ -54,7 +54,7 @@ impl Robot {
     pub const LADY_BROWN_SCORED: LadyBrownTarget =
         LadyBrownTarget::Position(Position::from_degrees(140.0));
     pub const LADY_BROWN_FLAT: LadyBrownTarget =
-        LadyBrownTarget::Position(Position::from_degrees(90.0));
+        LadyBrownTarget::Position(Position::from_degrees(110.0));
 
     // Control Loops
     pub const LINEAR_PID: Pid = Pid::new(1.5, 0.1, 0.125, Some(3.0));
@@ -91,9 +91,10 @@ impl Compete for Robot {
     }
 
     async fn driver(&mut self) {
-        if self.intake.is_raised().unwrap_or(true) {
-            _ = self.intake.lower();
-        }
+        self.lady_brown.set_target(Self::LADY_BROWN_LOWERED);
+        self.intake.disable_jam_prevention();
+        self.intake.set_reject_color(None);
+        _ = self.intake.lower();
 
         loop {
             let state = self.controller.state().unwrap_or_default();
@@ -130,6 +131,7 @@ impl Compete for Robot {
             } else if state.button_r1.is_now_pressed() {
                 self.lady_brown.set_target(match lady_brown_target {
                     Self::LADY_BROWN_RAISED => Self::LADY_BROWN_SCORED,
+      
                     _ => Self::LADY_BROWN_RAISED,
                 });
             }

@@ -11,6 +11,7 @@ use crate::Robot;
 impl Robot {
     pub async fn blue_rush(&mut self) {
         self.drivetrain.tracking.set_heading(102.0.deg());
+        self.intake.enable_jam_prevention();
 
         let dt = &mut self.drivetrain;
         let mut basic = Basic {

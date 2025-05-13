@@ -48,19 +48,19 @@ impl Robot {
     pub const LADY_BROWN_LOWERED: LadyBrownTarget =
         LadyBrownTarget::Position(Position::from_degrees(190.0));
     pub const LADY_BROWN_RAISED: LadyBrownTarget =
-        LadyBrownTarget::Position(Position::from_degrees(155.0));
+        LadyBrownTarget::Position(Position::from_degrees(154.0));
     pub const LADY_BROWN_UP: LadyBrownTarget =
         LadyBrownTarget::Position(Position::from_degrees(35.0));
     pub const LADY_BROWN_SCORED: LadyBrownTarget =
         LadyBrownTarget::Position(Position::from_degrees(25.0));
     pub const LADY_BROWN_FLAT: LadyBrownTarget =
-        LadyBrownTarget::Position(Position::from_degrees(-10.0));
+        LadyBrownTarget::Position(Position::from_degrees(-15.0));
 
     // Control Loops
     pub const LINEAR_PID: Pid = Pid::new(1.5, 0.1, 0.125, Some(3.0));
     pub const ANGUALR_PID: AngularPid =
         AngularPid::new(25.0, 2.0, 1.0, Some(Angle::from_degrees(5.0)));
-    pub const LADY_BROWN_PID: Pid = Pid::new(0.19, 0.0, 0.01, None);
+    pub const LADY_BROWN_PID: Pid = Pid::new(0.19, 0.01, 0.01, Some(3.0));
 
     // Tolerances
     pub const LINEAR_TOLERANCES: Tolerances = Tolerances::new()
@@ -79,7 +79,16 @@ impl Compete for Robot {
     async fn autonomous(&mut self) {
         let start = Instant::now();
 
+        #[cfg(route = "red")]
+        self.red().await;
+        #[cfg(route = "blue")]
+        self.blue().await;
+        #[cfg(route = "red_rush")]
+        self.red_rush().await;
+        #[cfg(route = "blue_rush")]
         self.blue_rush().await;
+        #[cfg(route = "skills")]
+        self.skills().await;
 
         info!("Route completed successfully in {:?}.", start.elapsed());
         info!(
@@ -91,7 +100,10 @@ impl Compete for Robot {
     }
 
     async fn driver(&mut self) {
+        self.lady_brown.set_target(Self::LADY_BROWN_LOWERED);
+        self.intake.disable_jam_prevention();
         self.intake.set_reject_color(None);
+        _ = self.intake.lower();
 
         loop {
             let state = self.controller.state().unwrap_or_default();
@@ -174,7 +186,7 @@ async fn main(peripherals: Peripherals) {
 
     let enc = CustomEncoder::<8192>::new(peripherals.adi_g, peripherals.adi_h, Direction::Forward);
     let mut display = peripherals.display;
-    let mut imu = InertialSensor::new(peripherals.port_9);
+    let mut imu = InertialSensor::new(peripherals.port_5);
     let mut controller = peripherals.primary_controller;
 
     calibrate_imu(&mut controller, &mut display, &mut imu).await;
