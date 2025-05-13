@@ -4,6 +4,6 @@ resolver = "2"
 
 [workspace.dependencies]
 vexide = "0.7.0"
-evian = { path = "../evian/packages/evian" }
+evian = { git = "https://github.com/vexide/evian", rev = "40ff9109d4749d5b26d6bdbcce890ae52a5195e3" }
 aubie2 = { path = "packages/aubie2" }
 log = "0.4.22"
